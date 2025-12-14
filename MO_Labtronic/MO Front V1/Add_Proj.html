@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Project - LabTronic MO System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://mo.lab-tronic.com/logo.ico">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- PushAlert -->
+    <script type="text/javascript">
+        (function(d, t) {
+            var g = d.createElement(t),
+            s = d.getElementsByTagName(t)[0];
+            g.src = "https://cdn.pushalert.co/integrate_8adf8eea3e77a71a801a8986cf581ce8.js";
+            s.parentNode.insertBefore(g, s);
+        }(document, "script"));
+    </script>
+    <!-- End PushAlert -->
+    <style>
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="password"] {
+      padding: 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-input);
+      color: var(--color-foreground);
+      font-size: 0.875rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .form-group select {
+      padding: 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-input);
+      color: var(--color-foreground);
+      font-size: 0.875rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 0.5rem center;
+      background-repeat: no-repeat;
+      background-size: 1.5em 1.5em;
+      padding-right: 2.5rem;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-ring);
+    }
+    .form-actions {
+      margin-top: 1.5em;
+      display: flex;
+      gap: 1em;
+    }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-section">
+                    <a href="dashboard.html" style="text-decoration: none; display: block;">
+                        <img src="https://mo.lab-tronic.com/logo.png" alt="Logo" class="logo">
+                    </a>
+                </div>
+                <div class="user-details-section">
+                    <div class="user-info">
+                        <h3 id="userName">Loading...</h3>
+                        <p id="userRole">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>📊</span>
+                    Dashboard
+                </a>
+                <a href="Projects.html" class="nav-item" data-access="view_all">
+                    <span>📁</span>
+                    Projects
+                </a>
+                <a href="Man_Order.html" class="nav-item" data-access="view_all">
+                    <span>🏭</span>
+                    Manufacturing Orders
+                </a>
+                <a href="Add_MO.html" class="nav-item" data-access="add_mo">
+                    <span>➕</span>
+                    Add MO
+                </a>
+                <a href="Add_Proj.html" class="nav-item" data-access="add_project">
+                    <span>🆕</span>
+                    Add Project
+                </a>
+                <a href="Notifications.html" class="nav-item">
+                    <span>🔔</span>
+                    Notifications
+                    <span id="notification-badge" class="badge-count" style="display: none;"></span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="Account.html" class="nav-item">
+                    <span>👤</span>
+                    Account
+                </a>
+                <button onclick="logout()" class="nav-item" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;">
+                    <span>🚪</span>
+                    Logout
+                </button>
+            </div>
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                ✕
+            </button>
+        </aside>
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <button class="mobile-toggle" onclick="toggleSidebar()">
+                    ☰
+                </button>
+                <div class="header-content">
+                    <h1 class="page-title">Add Project</h1>
+                </div>
+            </header>
+            <div class="content">
+                <div class="card mb-6" style="max-width: 600px; margin: 2em auto;">
+                    <div class="card-header">
+                        <h2 class="card-title">Add New Project</h2>
+                        <p class="text-muted-foreground">Fill in the details below to create a new project in the system.</p>
+                    </div>
+                    <div class="card-content">
+                        <form id="addProjectForm" class="form" autocomplete="off">
+                            <div class="form-group">
+                                <label for="university">University</label>
+                                <input type="text" id="university" name="university" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="lab">Lab</label>
+                                <select id="lab" name="lab" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="projectName">Project Name</label>
+                                <input type="text" id="projectName" name="projectName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="projectCode">Project Code</label>
+                                <input type="text" id="projectCode" name="projectCode" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="projectManager">Project Manager</label>
+                                <select id="projectManager" name="projectManager" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="designEngineer">Design Engineer</label>
+                                <select id="designEngineer" name="designEngineer" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="productionEngineer">Production Engineer</label>
+                                <select id="productionEngineer" name="productionEngineer" required></select>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Add Project</button>
+                                <a href="Projects.html" class="btn btn-secondary">Cancel</a>
+                            </div>
+                        </form>
+                        <div id="projectMessage" class="text-center mt-2" style="color: #2563eb;"></div>
+                        <div class="text-center mt-4">
+                            <button id="downloadProjectsCsv" class="btn btn-secondary">Download ProjectData.csv</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="https://unpkg.com/pocketbase@0.21.1/dist/pocketbase.umd.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+    // Show Add Project nav only for Design Engineer
+    document.addEventListener('DOMContentLoaded', function() {
+        const user = getCurrentUser && getCurrentUser();
+        if (user && user.Role === 'Design Engineer') {
+            document.getElementById('addProjectNav').style.display = '';
+        }
+    });
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Helper function to populate a dropdown with users of a specific role
+        async function populateUserDropdown(selectElement, role) {
+            try {
+                const users = await pb.collection('Users').getFullList({
+                    filter: `Role ~ "${role}" && verified = true`,
+                    sort: 'Account_Name'
+                });
+
+                selectElement.innerHTML = '';
+                // Add an empty placeholder option
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = `Select a ${role}`;
+                placeholder.disabled = true;
+                placeholder.selected = true;
+                selectElement.appendChild(placeholder);
+
+                if (users.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.textContent = `No users with role: ${role}`;
+                    opt.disabled = true;
+                    selectElement.appendChild(opt);
+                } else {
+                    users.forEach(u => {
+                        const opt = document.createElement('option');
+                        opt.value = u.id;
+                        opt.textContent = u.Account_Name || u.Full_Name || u.email;
+                        selectElement.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.error(`Failed to fetch users for role ${role}:`, e);
+                selectElement.innerHTML = '<option>Error loading users</option>';
+            }
+        }
+
+        // Populate all user dropdowns
+        await populateUserDropdown(document.getElementById('projectManager'), 'Project Manager');
+        await populateUserDropdown(document.getElementById('designEngineer'), 'Design Engineer');
+        await populateUserDropdown(document.getElementById('productionEngineer'), 'Production Engineer');
+
+        // Populate Lab dropdown
+        const labSelect = document.getElementById('lab');
+        try {
+            const labs = await pb.collection('Lab_Codes').getFullList({ sort: 'Lab_Name' });
+            labSelect.innerHTML = '';
+            // Add an empty placeholder option
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'Select a Lab';
+            placeholder.disabled = true;
+            placeholder.selected = true;
+            labSelect.appendChild(placeholder);
+            labs.forEach(lab => {
+                const opt = document.createElement('option');
+                opt.value = lab.id;
+                opt.textContent = lab.Lab_Name;
+                opt.setAttribute('data-lab-code', lab.Lab_Code);
+                labSelect.appendChild(opt);
+            });
+        } catch (e) {
+            console.error('Failed to fetch labs:', e);
+            labSelect.innerHTML = '<option>Error loading labs</option>';
+        }
+        // When a lab is selected, set the Project Code textbox value to the Lab_Code followed by a dash (e.g., 'FLU-')
+        labSelect.addEventListener('change', function() {
+            const selectedOption = labSelect.options[labSelect.selectedIndex];
+            let labCode = selectedOption.getAttribute('data-lab-code') || '';
+            if (labCode && !labCode.endsWith('-')) {
+                labCode = labCode + '-';
+            }
+            document.getElementById('projectCode').value = labCode;
+        });
+    });
+    // Add Project form logic
+    document.getElementById('addProjectForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const projectName = document.getElementById('projectName').value.trim();
+        const projectCode = document.getElementById('projectCode').value.trim();
+        const university = document.getElementById('university').value.trim();
+        const lab = document.getElementById('lab').value;
+        const projectManager = document.getElementById('projectManager').value;
+        const designEngineer = document.getElementById('designEngineer').value;
+        const productionEngineer = document.getElementById('productionEngineer').value;
+        const msg = document.getElementById('projectMessage');
+        msg.textContent = '';
+        if (!projectName || !projectCode || !university || !lab || !projectManager || !designEngineer || !productionEngineer) {
+            msg.textContent = 'Please fill in all fields.';
+            msg.style.color = '#d32f2f';
+            return;
+        }
+        try {
+            await pb.collection('Projects').create({
+                Project_Name: projectName,
+                Project_Code: projectCode,
+                University: university,
+                Lab: lab,
+                Project_Manager: projectManager,
+                Design_Engineer: designEngineer,
+                Production_Engineer: productionEngineer
+            });
+            msg.textContent = 'Project added successfully!';
+            msg.style.color = '#2563eb';
+            document.getElementById('addProjectForm').reset();
+        } catch (error) {
+            msg.textContent = 'Failed to add project: ' + (error?.message || 'Unknown error');
+            msg.style.color = '#d32f2f';
+        }
+    };
+    document.getElementById('downloadProjectsCsv').onclick = async function() {
+        try {
+            const projects = await pb.collection('Projects').getFullList({ sort: '-created' });
+            if (!projects.length) {
+                alert('No projects found.');
+                return;
+            }
+            // Prepare CSV header
+            const header = [
+                'Project_Name', 'Project_Code', 'University', 'Lab', 'Project_Manager', 'Design_Engineer', 'Production_Engineer', 'created', 'updated'
+            ];
+            // Prepare CSV rows
+            const rows = projects.map(p => [
+                p.Project_Name,
+                p.Project_Code,
+                p.University,
+                p.Lab,
+                p.Project_Manager,
+                p.Design_Engineer,
+                p.Production_Engineer,
+                p.created,
+                p.updated
+            ]);
+            // Convert to CSV string
+            const csv = [header, ...rows].map(row => row.map(val => '"' + (val ? String(val).replace(/"/g, '""') : '') + '"').join(',')).join('\n');
+            // Download
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ProjectData.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            alert('Failed to download projects: ' + (e?.message || e));
+        }
+    };
+    document.addEventListener('DOMContentLoaded', function() {
+      // Highlight Add Project as active
+      var navLinks = document.querySelectorAll('.sidebar-nav .nav-item');
+      navLinks.forEach(function(link) {
+        if (link.getAttribute('href') === 'Add_Proj.html') {
+          link.classList.add('active');
+        }
+      });
+      // User info
+      if (typeof updateUserInfo === 'function') {
+        updateUserInfo();
+      } else {
+        var user = getCurrentUser && getCurrentUser();
+        if (user) {
+          document.getElementById('userName').textContent = user.Full_Name || user.Account_Name || 'User';
+          document.getElementById('userRole').textContent = user.Role || 'Unknown Role';
+        }
+      }
+    });
+    document.addEventListener('auth-ready', function () {
+    updateNavigation(); // use the function from auth.js
+});
+
+    </script>
+</body>
+</html> 

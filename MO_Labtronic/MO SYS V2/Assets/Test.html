@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MO Cards</title>
+  <style>
+    :root{--bg:#f5f7fb;--panel:#ffffff;--muted:#6b7280;--text:#111827;--card:#ffffff;--accent:#2563eb;--accent-2:#16a34a;--warning:#b45309;--danger:#dc2626;--ok:#059669;--border:#e5e7eb}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,#eef2ff,#f5f7fb 40%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;}
+    .container{max-width:1200px;margin:0 auto;padding:24px}
+    .header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+    .title{font-size:20px;font-weight:700}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    .input{background:#ffffff;border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;outline:none;min-width:220px}
+    .grid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:12px}
+    @media(min-width:640px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(min-width:1024px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    .card{background:var(--card);backdrop-filter:saturate(130%) blur(0px);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 14px rgba(0,0,0,.06)}
+    .row{display:flex;align-items:center;gap:10px;justify-content:space-between}
+    .mo{font-weight:700;font-size:16px;letter-spacing:.2px;display:flex;align-items:center;gap:8px}
+    .dot{width:8px;height:8px;border-radius:999px;background:#ef4444;display:inline-block}
+    .sub{color:var(--muted);font-size:12px}
+    hr.solid { width: 100%; border-top: 1px solid #bbb; margin:1px 0 }
+    .badge{font-size:11px;border-radius:999px;padding:4px 8px;border:1px solid var(--border);background:#f8fafc}
+    .badge.ok{color:#065f46;border-color:#a7f3d0;background:#d1fae5}
+    .badge.warn{color:#2b2928;border-color:#266fc9;background:#bfdbfe}
+    .badge.danger{color:#7f1d1d;border-color:#fecaca;background:#fee2e2}
+    .tag{font-size:11px;color:#1f2937;border:1px solid var(--border);background:#f3f4f6;border-radius:8px;padding:2px 6px}
+    .progress{height:10px;background:#f3f4f6;border:1px solid var(--border);border-radius:999px;overflow:hidden;position:relative;flex:1}
+    .bar{height:100%;background:linear-gradient(90deg,#22c55e,#16a34a);width:0}
+    .pct{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:#065f46;font-weight:600}
+    .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;font-size:12px}
+    .kv .k{color:var(--muted)}
+    .empty{opacity:.7;text-align:center;padding:40px;border:1px dashed rgba(148,163,184,.25);border-radius:12px}
+    .loading,.error{padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:#ffffff;font-size:13px}
+    .error{color:#7f1d1d;border-color:#fecaca;background:#fee2e2}
+    a{color:#2563eb}
+    .icons{display:flex;align-items:center;gap:8px}
+    .icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px}
+    .icon svg{display:block}
+    .icon.sent-all path{stroke:#34d399}
+    .icon.sent-some path{stroke:#93c5fd}
+    .icon.sent-none{display:none}
+    .icon-note path{stroke:#f59e0b}
+    .card[role="button"]{cursor:pointer}
+    .detail{position:sticky;bottom:0;left:0;right:0;background:rgba(255,255,255,.98);backdrop-filter:saturate(140%) blur(6px);border-top:1px solid var(--border);margin-top:16px}
+    .detail-inner{max-width:1200px;margin:0 auto;padding:16px}
+    .detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .detail-title{font-weight:700}
+    .detail-close{background:#ffffff;border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;cursor:pointer}
+    .kv-wide{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;font-size:12px}
+    @media(min-width:900px){.kv-wide{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    .kv-item{border:1px solid var(--border);background:#ffffff;border-radius:10px;padding:10px}
+    .kv-key{color:var(--muted);font-size:11px;margin-bottom:4px}
+    .kv-val{font-size:12px;word-break:break-word;white-space:pre-wrap}
+    .login-section{display:flex;justify-content:center;align-items:center;min-height:300px;margin-bottom:24px}
+    .login-form{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;box-shadow:0 6px 14px rgba(0,0,0,.06);min-width:320px}
+    .login-form h2{margin:0 0 20px 0;text-align:center;color:var(--text)}
+    .form-group{margin-bottom:16px}
+    .form-group label{display:block;margin-bottom:6px;font-size:14px;font-weight:500;color:var(--text)}
+    .btn{padding:10px 16px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:500;transition:all 0.2s;display:flex;align-items:center;gap:6px}
+    .btn-primary{background:var(--accent);color:white}
+    .btn-primary:hover{background:#1d4ed8;transform:translateY(-1px)}
+    .btn-secondary{background:var(--muted);color:white}
+    .btn-secondary:hover{background:#4b5563;transform:translateY(-1px)}
+    .btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+    .btn:disabled:hover{transform:none}
+    .user-section{margin-bottom:16px}
+    .user-info{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+    .user-avatar{width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--muted)}
+    .user-avatar img{width:100%;height:100%;object-fit:cover}
+    .user-details{flex:1}
+    .user-name{font-weight:600;color:var(--text);margin-bottom:2px}
+    .user-role{font-size:12px;color:var(--muted)}
+    .category-section{margin-bottom:24px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--card)}
+    .category-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:linear-gradient(135deg,#f8fafc,#f1f5f9);cursor:pointer;transition:all 0.2s;border-bottom:1px solid var(--border)}
+    .category-header:hover{background:linear-gradient(135deg,#f1f5f9,#e2e8f0)}
+    .category-title{font-size:16px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+    .category-count{background:var(--accent);color:white;padding:4px 8px;border-radius:12px;font-size:12px;font-weight:500}
+    .category-arrow{width:20px;height:20px;transition:transform 0.2s;color:var(--muted)}
+    .category-arrow.collapsed{transform:rotate(-90deg)}
+    .category-content{padding:16px 20px;transition:all 0.3s ease}
+    .category-content.collapsed{display:none}
+    .category-grid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:12px}
+    @media(min-width:640px){.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(min-width:1024px){.category-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    .category-not-started .category-header{background:linear-gradient(135deg,#f1f5f9,#f8fafc);border-bottom-color:#f59e0b}
+    .category-active .category-header{background:linear-gradient(135deg,#dbeafe,#bfdbfe);border-bottom-color:#3b82f6}
+    .category-completed .category-header{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border-bottom-color:#10b981}
+  </style>
+ <!-- 1) Load the UMD build (not ESM) so we can init from window.initSqlJs -->
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/sql-wasm.js"></script>
+
+<!-- 2) Initialize and expose a ready promise + SQL object -->
+<script>
+  // Disable your Download button until sql.js is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('downloadDbBtn');
+    if (btn) btn.disabled = true;
+  });
+
+  window.sqlJsReady = window.initSqlJs({
+    locateFile: (file) => `https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/${file}`,
+  }).then(SQL => {
+    window.SQL = SQL;
+    console.log('sql.js ready');
+    const btn = document.getElementById('downloadDbBtn');
+    if (btn) btn.disabled = false;  // enable once ready
+    return SQL;
+  }).catch(e => {
+    console.error('sql.js init failed', e);
+    alert('Failed to initialize sql.js (check .wasm URL / CORS).');
+  });
+</script>
+
+  
+</head>
+<body>
+  <div class="container">
+    <!-- Login Section -->
+    <div id="loginSection" class="login-section">
+      <div class="login-form">
+        <h2>Login to MO System</h2>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginEmail">Email:</label>
+            <input type="email" id="loginEmail" class="input" placeholder="Enter your email" required />
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Password:</label>
+            <input type="password" id="loginPassword" class="input" placeholder="Enter your password" required />
+          </div>
+          <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+        <div id="loginError" class="error" hidden></div>
+      </div>
+    </div>
+
+    <!-- User Info Section (hidden initially) -->
+    <div id="userSection" class="user-section" hidden>
+      <div class="user-info">
+        <div class="user-avatar">
+          <img id="userAvatar" src="" alt="Avatar" />
+        </div>
+        <div class="user-details">
+          <div class="user-name" id="userName">User Name</div>
+          <div class="user-role" id="userRole">Role</div>
+        </div>
+        <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+      </div>
+    </div>
+
+    <div class="header">
+      <div class="title">Manufacturing Orders</div>
+      <div class="controls">
+        <input id="search" class="input" placeholder="Search by MO or Project..." />
+        <button id="downloadDbBtn" class="btn btn-secondary" title="Download Database Backup">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7,10 12,15 17,10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Download DB
+        </button>
+      </div>
+    </div>
+
+    <div id="status" class="loading">Loading records…</div>
+    
+    <!-- Categorized MO Sections -->
+    <div id="categoriesContainer" hidden>
+      <!-- Not Started Section -->
+      <div class="category-section category-not-started">
+        <div class="category-header" data-category="not-started">
+          <div class="category-title">
+            <span>Not Started</span>
+            <span class="category-count" id="not-started-count">0</span>
+          </div>
+          <div class="category-arrow">▼</div>
+        </div>
+        <div class="category-content">
+          <div class="category-grid" id="not-started-grid"></div>
+        </div>
+      </div>
+
+      <!-- Active Section -->
+      <div class="category-section category-active">
+        <div class="category-header" data-category="active">
+          <div class="category-title">
+            <span>Active</span>
+            <span class="category-count" id="active-count">0</span>
+          </div>
+          <div class="category-arrow">▼</div>
+        </div>
+        <div class="category-content">
+          <div class="category-grid" id="active-grid"></div>
+        </div>
+      </div>
+
+      <!-- Completed Section -->
+      <div class="category-section category-completed">
+        <div class="category-header" data-category="completed">
+          <div class="category-title">
+            <span>Completed</span>
+            <span class="category-count" id="completed-count">0</span>
+          </div>
+          <div class="category-arrow">▼</div>
+        </div>
+        <div class="category-content">
+          <div class="category-grid" id="completed-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="detail" class="detail" hidden>
+    <div class="detail-inner">
+      <div class="detail-header">
+        <div class="detail-title" id="detailTitle">Details</div>
+        <button id="detailClose" class="detail-close">Close</button>
+      </div>
+      <div id="detailGrid" class="kv-wide"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import PocketBase from 'https://unpkg.com/pocketbase@0.21.1/dist/pocketbase.es.mjs';
+
+    const pb = new PocketBase('https://mo.lab-tronic.com/database');
+
+    const statusEl = document.getElementById('status');
+    const searchEl = document.getElementById('search');
+    const categoriesContainer = document.getElementById('categoriesContainer');
+    const loginSection = document.getElementById('loginSection');
+    const userSection = document.getElementById('userSection');
+    const loginForm = document.getElementById('loginForm');
+    const loginError = document.getElementById('loginError');
+    const userName = document.getElementById('userName');
+    const userRole = document.getElementById('userRole');
+    const userAvatar = document.getElementById('userAvatar');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const downloadDbBtn = document.getElementById('downloadDbBtn');
+
+    function parseMaybeJson(value){
+      if(typeof value !== 'string') return value;
+      const s = value.trim();
+      if(s === '') return '';
+      // Fast path for plain numbers
+      if(/^[-+]?\d+(?:\.\d+)?$/.test(s)) return Number(s);
+      // Try JSON for objects/arrays/booleans/numbers
+      if(s.startsWith('{') || s.startsWith('[') || s === 'true' || s === 'false' || s.startsWith('"')){
+        try{ return JSON.parse(s); }catch{ /* ignore */ }
+      }
+      return value;
+    }
+
+    function toNumber(value){
+      if(value == null) return 0;
+      const v = parseMaybeJson(value);
+      if(typeof v === 'number' && Number.isFinite(v)) return v;
+      if(typeof v === 'string'){
+        if(v.trim() === '') return 0;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : 0;
+      }
+      if(typeof v === 'object'){
+        if(v == null) return 0;
+        if('value' in v && typeof v.value !== 'object') return Number(v.value) || 0;
+        if('count' in v && typeof v.count !== 'object') return Number(v.count) || 0;
+        if(Array.isArray(v)) return v.length;
+      }
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function computeProgress(record){
+      const done = toNumber(record?.Done_Processes);
+      const total = Math.max(0,toNumber(record?.Total_Processes));
+      if(total === 0) return 0;
+      const pct = Math.max(0, Math.min(100, Math.round((done/total)*100)));
+      return pct;
+    }
+
+    function hasNotes(record){
+      // Only respect Notes_Status; ignore other fields to avoid false positives
+      const raw = record?.Notes_Status;
+      const v = parseMaybeJson(raw);
+      if(typeof v === 'boolean') return v === true;
+      if(typeof v === 'number') return v > 0;
+      if(typeof v === 'string'){
+        const t = v.trim().toLowerCase();
+        return ['true','1','yes','y','on','has'].includes(t);
+      }
+      // Treat objects/arrays as false unless they explicitly encode a truthy status
+      if(typeof v === 'object' && v){
+        if('status' in v){
+          const t = String(v.status).trim().toLowerCase();
+          return ['true','1','yes','y','on','has'].includes(t);
+        }
+        return false;
+      }
+      return false;
+    }
+
+    function isSent(record){
+      const statusRaw = record?.Files_Sent_Status ?? record?.sent ?? record?.files_sent_status;
+      const s = parseMaybeJson(statusRaw);
+      if(typeof s === 'boolean') return s;
+      if(typeof s === 'number') return s > 0;
+      if(typeof s === 'string'){
+        const t = s.toLowerCase();
+        if(['true','1','yes','done','sent','complete','completed','ok'].includes(t)) return true;
+      }
+      if(typeof s === 'object' && s){
+        if('status' in s && typeof s.status !== 'object'){
+          const t = String(s.status).toLowerCase();
+          if(['true','1','yes','done','sent','complete','completed','ok'].includes(t)) return true;
+        }
+        if('sent' in s && 'total' in s){
+          const sentN = toNumber(s.sent);
+          const totalN = toNumber(s.total);
+          if(totalN > 0) return sentN >= totalN;
+        }
+      }
+      const sent = toNumber(record?.Files_Sent);
+      const total = toNumber(record?.Files_Total);
+      return total > 0 && sent >= total;
+    }
+
+    function getSentState(record){
+      const total = toNumber(record?.Files_Total);
+      const sent = toNumber(record?.Files_Sent);
+      if(total > 0){
+        if(sent >= total) return 'all';
+        if(sent > 0) return 'some';
+        return 'none';
+      }
+      // Try to parse legacy Files_Status like: [{MO-sd.pdf,True,id,2025-...},{...}]
+      function parseLegacyFilesStatus(raw){
+        if(typeof raw !== 'string') return null;
+        const t = raw.trim();
+        if(!(t.startsWith('[') && t.endsWith(']'))) return null;
+        const inner = t.slice(1, -1).trim();
+        if(inner === '') return { sent: 0, total: 0 };
+        const chunks = inner.split(/\}\s*,\s*\{/);
+        let sentCount = 0;
+        let totalCount = 0;
+        for(let i=0;i<chunks.length;i++){
+          let chunk = chunks[i].replace(/^\{\s*/, '').replace(/\s*\}$/,'');
+          const parts = chunk.split(',');
+          if(parts.length >= 2){
+            const flag = String(parts[1]).trim().toLowerCase();
+            const truthy = ['true','1','yes','y','ok','sent','done'].includes(flag);
+            if(truthy) sentCount++;
+            totalCount++;
+          }
+        }
+        return { sent: sentCount, total: totalCount };
+      }
+      // Some backends concatenate multiple bracketed arrays (legacy + JSON). Aggregate both.
+      function parseCombinedFilesStatus(raw){
+        if(raw == null) return null;
+        const text = typeof raw === 'string' ? raw : String(raw);
+        const segments = text.match(/\[[\s\S]*?\]/g);
+        if(!segments) return null;
+        let sentSum = 0;
+        let totalSum = 0;
+        for(const seg of segments){
+          let parsedJson = null;
+          try{ parsedJson = JSON.parse(seg); }catch{ parsedJson = null; }
+          if(Array.isArray(parsedJson)){
+            // Expected shape: [{ file, sent, sentBy, sentDate }, ...]
+            for(const item of parsedJson){
+              // Consider sent if explicit truthy, or has sentBy/sentDate
+              const isSent = !!(item && (item.sent || item.sentBy || item.sentDate));
+              if(isSent) sentSum++;
+              totalSum++;
+            }
+            continue;
+          }
+          const legacyRes = parseLegacyFilesStatus(seg);
+          if(legacyRes){
+            sentSum += legacyRes.sent;
+            totalSum += legacyRes.total;
+          }
+        }
+        return { sent: sentSum, total: totalSum };
+      }
+      const legacy = parseLegacyFilesStatus(record?.Files_Status);
+      const combined = parseCombinedFilesStatus(record?.Files_Status);
+      const computed = combined || legacy;
+      if(computed && computed.total > 0){
+        if(computed.sent >= computed.total) return 'all';
+        if(computed.sent > 0) return 'some';
+        return 'none';
+      }
+      // Fallbacks when totals are missing
+      const raw = record?.Files_Sent_Status ?? record?.Files_Status ?? record?.files_status ?? record?.sent_status ?? record?.Sent_Status;
+      const s = parseMaybeJson(raw);
+      if(typeof s === 'boolean') return s ? 'all' : 'none';
+      if(typeof s === 'number'){
+        if(s >= 1) return 'all';
+        if(s > 0) return 'some';
+        return 'none';
+      }
+      if(typeof s === 'object' && s){
+        if('sent' in s && 'total' in s){
+          const sentN = toNumber(s.sent);
+          const totalN = toNumber(s.total);
+          if(totalN > 0){
+            if(sentN >= totalN) return 'all';
+            if(sentN > 0) return 'some';
+          }
+          return 'none';
+        }
+        if('status' in s && typeof s.status !== 'object'){
+          const t = String(s.status).toLowerCase();
+          if(['true','1','yes','done','sent','complete','completed','ok','all','100%','full'].includes(t)) return 'all';
+          if(['some','partial','progress','in progress','sending','started','test'].includes(t)) return 'some';
+          return 'none';
+        }
+      }
+      if(typeof s === 'string'){
+        const t = s.trim().toLowerCase();
+        if(['true','1','yes','done','sent','complete','completed','ok','all','100%','full'].includes(t)) return 'all';
+        if(['some','partial','progress','in progress','sending','started','test'].includes(t)) return 'some';
+        return 'none';
+      }
+      return 'none';
+    }
+
+    function getPriority(record){
+      const raw = record?.Priority ?? record?.priority ?? record?.Periority ?? record?.periority ?? record?.prio ?? record?.level;
+      const v = parseMaybeJson(raw);
+      if(v == null) return '';
+      if(typeof v === 'number'){
+        if(v >= 3) return 'high';
+        if(v === 2) return 'medium';
+        if(v <= 1) return 'low';
+      }
+      const t = String(v).trim().toLowerCase();
+      if(['high','h','3'].includes(t)) return 'high';
+      if(['medium','med','m','2'].includes(t)) return 'medium';
+      if(['low','l','1'].includes(t)) return 'low';
+      return '';
+    }
+
+    function isSeen(record){
+      if(!currentUser || !record?.Seen) return false;
+      const seenArray = parseMaybeJson(record.Seen);
+      if(!Array.isArray(seenArray)) return false;
+      
+      // Since user is now authenticated with Accounts_T directly, use the user ID
+      const userId = currentUser.id;
+      const isUserSeen = seenArray.includes(userId);
+      
+      console.log('isSeen check:', {
+        userId: userId,
+        seenArray: seenArray,
+        isUserSeen: isUserSeen
+      });
+      
+      return isUserSeen;
+    }
+
+    function categorizeMO(record) {
+      const status = String(record?.MO_Status || '').toLowerCase();
+      
+      if (['done', 'completed', 'complete', 'ok', 'finished'].includes(status)) {
+        return 'completed';
+      } else if (['not started', 'new', 'todo', 'pending', 'draft'].includes(status)) {
+        return 'not-started';
+      } else {
+        return 'active';
+      }
+    }
+
+    function setupCategoryToggles() {
+      const categoryHeaders = document.querySelectorAll('.category-header');
+      categoryHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+          const category = header.dataset.category;
+          const content = header.nextElementSibling;
+          const arrow = header.querySelector('.category-arrow');
+          
+          if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            arrow.classList.remove('collapsed');
+          } else {
+            content.classList.add('collapsed');
+            arrow.classList.add('collapsed');
+          }
+        });
+      });
+    }
+
+    function getUserName(value){
+      const v = parseMaybeJson(value);
+      if(v == null) return '';
+      if(typeof v === 'string') return v.trim();
+      if(typeof v === 'object'){
+        const firstLast = [v.firstName, v.lastName].filter(Boolean).join(' ').trim();
+        return (
+          v.username ||
+          v.name ||
+          firstLast ||
+          v.fullName ||
+          v.email ||
+          v.id ||
+          ''
+        );
+      }
+      return String(v);
+    }
+
+    function el(html){
+      const t = document.createElement('template');
+      t.innerHTML = html.trim();
+      return t.content.firstElementChild;
+    }
+
+    function renderCard(r){
+      const moName = r?.MO_Name ?? '-';
+      const projectName = r?.Project_Name ?? '-';
+      const moStatus = r?.MO_Status ?? '-';
+      const partsCount = toNumber(r?.Parts_Count);
+      const moType = r?.MO_Type ?? '-';
+      const pct = computeProgress(r);
+      const notes = hasNotes(r);
+      const sentState = getSentState(r);
+      const priority = getPriority(r);
+      const priorityBadgeClass = priority === 'high' ? 'danger' : (priority === 'medium' ? 'warn' : (priority === 'low' ? 'ok' : ''));
+      const seen = isSeen(r);
+
+      const statusLower = String(moStatus).toLowerCase();
+      const statusBadgeClass = moStatus ? (['done','completed','complete','ok'].includes(statusLower) ? 'ok' : (['hold','pending','blocked','warning','active'].includes(statusLower) ? 'warn' : '')) : '';
+      const topStatus = (()=>{
+        const s = String(moStatus||'').toLowerCase();
+        if(['done','completed','complete','ok'].includes(s)) return { text:'Completed', cls:'ok' };
+        if(['not started','new','todo','pending'].includes(s)) return { text:'Not started', cls:'' };
+        return { text:'Active', cls:'warn' };
+      })();
+      const notesBadgeClass = notes ? 'warn' : '';
+
+      const card = el(`
+        <div class="card" role="button" tabindex="0" data-mo-id="${r?.id || ''}">
+          <div class="row">
+            <div class="mo">${seen ? '' : '<span class="dot"></span>'}${moName}
+              ${priority ? `
+                <span class="badge ${priorityBadgeClass}" title="Priority" aria-label="Priority ${priority.toUpperCase()}">
+                  ${priority.toUpperCase()}
+                </span>
+              ` : ''}
+            </div>
+            <div class="icons" title="Flags and status">
+              ${notes ? `
+                <span class="icon icon-note" title="Has notes" aria-label="Has notes">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M7 3h10a2 2 0 0 1 2 2v9.5a2 2 0 0 1-.586 1.414l-3.5 3.5A2 2 0 0 1 13.5 20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path>
+                    <path d="M14 20v-4a2 2 0 0 1 2-2h4"></path>
+                  </svg>
+                </span>
+              ` : ''}
+              ${sentState === 'all' ? `
+                <span class="icon sent-all" title="All files sent" aria-label="All files sent">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M6 12l4 4 8-8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M3 14l3 3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              ` : sentState === 'some' ? `
+                <span class="icon sent-some" title="Some files sent" aria-label="Some files sent">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M6 12l4 4 8-8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              ` : `
+                <span class="icon sent-none" aria-hidden="true"></span>
+              `}
+              <span class="badge ${statusBadgeClass}" title="MO Status">${moStatus}</span>
+            </div>
+          </div>
+          <hr class="solid">
+          <div class="row" style="gap:8px">
+            <div class="sub" style="flex:1">${projectName}</div>
+            <div class="tag">${moType}</div>
+          </div>
+          <div class="row" style="gap:8px">
+            <div class="sub" style="flex:1">${(() => {
+              const pm = getUserName(r?.Project_Manager);
+              const de = getUserName(r?.Design_Engineer);
+              const pe = getUserName(r?.Production_Engineer);
+              const parts = [];
+              if(pe) parts.push(` ${pe}`);
+              if(de) parts.push(` ${de}`);
+              if(pm) parts.push(` ${pm}`);
+              return parts.join(' • ');
+            })()}</div>
+            <div class="sub" style="display:flex;align-items:center;gap:4px" title="Parts">
+              
+              ${partsCount} Parts
+              <svg width="12" height="12" viewBox="0 0 24 24" fill= skyblue >
+                <rect x="6" y="6" width="6" height="6"></rect>
+                <rect x="14" y="6" width="6" height="6"></rect>
+                <rect x="14" y="14" width="6" height="6"></rect>
+                <rect x="6" y="14" width="6" height="6"></rect>
+              </svg>
+            </div>
+          </div>
+          <div class="row" style="gap:8px">
+            <div class="progress" aria-label="Progress ${pct}%"><div class="bar" style="width:${pct}%"></div></div>
+            <div class="sub" style="min-width:40px;text-align:right">${pct}%</div>
+          </div>
+        </div>
+      `);
+      card.addEventListener('click', async () => {
+        await markAsSeen(r);
+        selectRecord(r);
+      });
+      card.addEventListener('keydown', async (e)=>{ 
+        if(e.key==='Enter' || e.key===' ') { 
+          e.preventDefault(); 
+          await markAsSeen(r);
+          selectRecord(r);
+        } 
+      });
+      return card;
+    }
+
+    function render(records){
+      // Clear all category grids
+      document.getElementById('not-started-grid').innerHTML = '';
+      document.getElementById('active-grid').innerHTML = '';
+      document.getElementById('completed-grid').innerHTML = '';
+      
+      if(!records || records.length === 0){
+        categoriesContainer.hidden = true;
+        statusEl.hidden = false;
+        statusEl.className = 'empty';
+        statusEl.textContent = 'No records found.';
+        return;
+      }
+      
+      // Categorize records
+      const categorized = {
+        'not-started': [],
+        'active': [],
+        'completed': []
+      };
+      
+      for(const r of records){
+        const category = categorizeMO(r);
+        categorized[category].push(r);
+      }
+      
+      // Render each category
+      Object.keys(categorized).forEach(category => {
+        const grid = document.getElementById(`${category}-grid`);
+        const count = document.getElementById(`${category}-count`);
+        
+        count.textContent = categorized[category].length;
+        
+        const frag = document.createDocumentFragment();
+        for(const r of categorized[category]){
+          frag.appendChild(renderCard(r));
+        }
+        grid.appendChild(frag);
+      });
+      
+      statusEl.hidden = true;
+      categoriesContainer.hidden = false;
+      
+      // Setup category toggles
+      setupCategoryToggles();
+    }
+
+    function filterRecords(records, term){
+      if(!term) return records;
+      const q = term.toLowerCase();
+      return records.filter(r =>
+        String(r?.MO_Name ?? '').toLowerCase().includes(q) ||
+        String(r?.Project_Name ?? '').toLowerCase().includes(q) ||
+        String(r?.MO_Status ?? '').toLowerCase().includes(q) ||
+        String(r?.MO_Type ?? '').toLowerCase().includes(q)
+      );
+    }
+
+    let allRecords = [];
+    let selectedRecord = null;
+    let currentUser = null;
+
+    // Authentication functions
+    async function checkAuth() {
+      try {
+        if (pb.authStore.isValid) {
+          // Refresh the auth store
+          await pb.collection('Accounts_T').authRefresh();
+          currentUser = pb.authStore.model;
+          showUserInfo();
+          return true;
+        }
+      } catch (err) {
+        console.log('Auth check failed:', err);
+        pb.authStore.clear();
+      }
+      showLoginForm();
+      return false;
+    }
+
+    function showLoginForm() {
+      loginSection.hidden = false;
+      userSection.hidden = true;
+      categoriesContainer.hidden = true;
+      statusEl.hidden = true;
+      downloadDbBtn.hidden = true;
+    }
+
+    function showUserInfo() {
+      loginSection.hidden = true;
+      userSection.hidden = false;
+      downloadDbBtn.hidden = false;
+      
+      if (currentUser) {
+        userName.textContent = currentUser.Full_Name || currentUser.name || currentUser.email || 'User';
+        userRole.textContent = Array.isArray(currentUser.Role) ? currentUser.Role.join(', ') : (currentUser.Role || 'User');
+        
+        if (currentUser.Avatar) {
+          userAvatar.src = pb.files.getUrl(currentUser, currentUser.Avatar);
+          userAvatar.alt = 'User Avatar';
+        } else {
+          userAvatar.style.display = 'none';
+        }
+      }
+    }
+
+    async function login(email, password) {
+      try {
+        const authData = await pb.collection('Accounts_T').authWithPassword(email, password);
+        currentUser = authData.record;
+        showUserInfo();
+        await load(); // Load MO data after successful login
+        return true;
+      } catch (err) {
+        console.error('Login failed:', err);
+        loginError.textContent = 'Login failed. Please check your credentials.';
+        loginError.hidden = false;
+        return false;
+      }
+    }
+
+    function logout() {
+      pb.authStore.clear();
+      currentUser = null;
+      allRecords = [];
+      showLoginForm();
+    }
+
+    async function downloadDatabaseSqlite() {
+  // Wait for the wasm module to finish initializing
+  if (window.sqlJsReady) {
+    try { await window.sqlJsReady; } catch (e) {
+      alert('sql.js failed to initialize. Check console for details.');
+      return;
+    }
+  }
+  if (!window.SQL) {
+    alert('sql.js is not ready. Make sure the module is loaded and locateFile points to the .wasm.');
+    return;
+  }
+  if (!currentUser) {
+    alert('Please login first to download the database.');
+    return;
+  }
+
+  // Optional: disable PocketBase request auto-cancel while we paginate
+  if (pb?.autoCancellation) pb.autoCancellation(false);
+
+  const btn = downloadDbBtn;
+  try {
+    btn.disabled = true;
+    btn.innerHTML = `... Building .db ...`;
+
+    const collections = ['Accounts_T', 'Projects_T', 'Uni_T', 'Lab_T'];
+    const recordsByCollection = {};
+
+    for (const collectionName of collections) {
+      const rows = [];
+      let page = 1;
+      const perPage = 100;
+
+      while (true) {
+        let list;
+        try {
+          list = await pb.collection(collectionName).getList(page, perPage);
+        } catch (e) {
+          if (e?.status === 403) {
+            throw new Error(`403 on ${collectionName}. Your List rules block this export. Use an admin route or relax rules for authenticated users.`);
+          }
+          throw e;
+        }
+        rows.push(...list.items);
+        if (list.items.length < perPage || page > 100) break;
+        page++;
+      }
+      recordsByCollection[collectionName] = rows;
+    }
+
+    // Build SQLite DB in-memory
+    const db = new SQL.Database();
+    db.run('PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF; PRAGMA temp_store=MEMORY;');
+
+    for (const [table, rows] of Object.entries(recordsByCollection)) {
+      db.run(`
+        CREATE TABLE IF NOT EXISTS "${table}" (
+          id TEXT PRIMARY KEY,
+          created TEXT,
+          updated TEXT,
+          data TEXT NOT NULL
+        );
+      `);
+
+      const stmt = db.prepare(`
+        INSERT INTO "${table}" (id, created, updated, data)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          created=excluded.created,
+          updated=excluded.updated,
+          data=excluded.data;
+      `);
+
+      db.run('BEGIN');
+      for (const r of rows) {
+        stmt.run([r.id ?? crypto.randomUUID(), r.created ?? null, r.updated ?? null, JSON.stringify(r)]);
+      }
+      db.run('COMMIT');
+      stmt.free();
+    }
+
+    // Download .db
+    const binary = db.export();
+    const blob = new Blob([binary], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), {
+      href: url,
+      download: `pocketbase_dump_${new Date().toISOString().slice(0,10)}.db`,
+    });
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    alert('SQLite .db downloaded!');
+  } catch (err) {
+    console.error(err);
+    alert(err.message || 'Failed to build/download .db.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `Download DB`;
+  }
+}
+
+
+
+    async function markAsSeen(record) {
+      if (!currentUser || !record?.id) return;
+      
+      try {
+        // Get current seen array
+        const currentSeen = parseMaybeJson(record.Seen) || [];
+        if (!Array.isArray(currentSeen)) return;
+        
+        // Since user is now authenticated with Accounts_T directly, use the user ID
+        const userId = currentUser.id;
+        
+        // Add current user ID if not already present
+        if (!currentSeen.includes(userId)) {
+          const updatedSeen = [...currentSeen, userId];
+          
+          // Update the record in MO_T collection
+          await pb.collection('MO_T').update(record.id, {
+            Seen: updatedSeen
+          });
+          
+          // Update local record
+          record.Seen = updatedSeen;
+          
+          // Re-render the specific card to remove red dot
+          const cardElement = document.querySelector(`[data-mo-id="${record.id}"]`);
+          if (cardElement) {
+            const newCard = renderCard(record);
+            cardElement.parentNode.replaceChild(newCard, cardElement);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to mark as seen:', err);
+      }
+    }
+
+    async function load(){
+      if (!currentUser) {
+        console.log('User not authenticated, skipping load');
+        return;
+      }
+      
+      try{
+        statusEl.hidden = false;
+        statusEl.className = 'loading';
+        statusEl.textContent = 'Loading records…';
+
+        // Manual pagination to avoid skipTotal param (may be restricted on server)
+        async function fetchAllPaged(){
+          const attempts = [
+            { perPage: 50, sort: undefined },
+            { perPage: 20, sort: undefined },
+            { perPage: 50, sort: '-created' },
+            { perPage: 50, sort: '-updated' },
+          ];
+          let lastError = null;
+          for(const attempt of attempts){
+            try{
+              const acc = [];
+              let page = 1;
+              while(true){
+                const params = attempt.sort ? { sort: attempt.sort } : {};
+                const list = await pb.collection('MO_View').getList(page, attempt.perPage, params);
+                acc.push(...list.items);
+                if(list.items.length < attempt.perPage) break;
+                page += 1;
+                if(page > 50) break; // safety cap
+              }
+              return acc;
+            }catch(e){
+              lastError = e;
+              // try next attempt
+            }
+          }
+          if(lastError) throw lastError;
+          return [];
+        }
+
+        const records = await fetchAllPaged();
+        
+        // Update loading status
+        statusEl.textContent = 'Loading seen status...';
+        
+        // Enrich records with Seen field from MO_T collection
+        async function enrichWithSeenData(moViewRecords) {
+          const enrichedRecords = [];
+          let processedCount = 0;
+          
+          for (const record of moViewRecords) {
+            try {
+              // Get the corresponding MO_T record to get the Seen field
+              const moTRecord = await pb.collection('MO_T').getOne(record.id);
+              if (moTRecord && moTRecord.Seen) {
+                // Merge the Seen field from MO_T into the MO_View record
+                record.Seen = moTRecord.Seen;
+              }
+            } catch (err) {
+              console.log(`Could not fetch Seen data for MO ${record.id}:`, err.message);
+              // Keep the record without Seen field
+            }
+            enrichedRecords.push(record);
+            
+            // Update progress
+            processedCount++;
+            if (processedCount % 5 === 0) {
+              statusEl.textContent = `Loading seen status... ${processedCount}/${moViewRecords.length}`;
+            }
+            
+            // Add small delay to prevent auto-cancellation
+            if (processedCount % 10 === 0) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          }
+          
+          return enrichedRecords;
+        }
+        
+        const enrichedRecords = await enrichWithSeenData(records);
+        allRecords = enrichedRecords;
+        render(allRecords);
+      }catch(err){
+        console.error(err);
+        statusEl.hidden = false;
+        statusEl.className = 'error';
+statusEl.textContent = 'Failed to load records. Please try again.';
+categoriesContainer.hidden = true;
+
+      }
+    }
+
+    // Event listeners
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      loginError.hidden = true;
+      await login(email, password);
+    });
+
+    logoutBtn.addEventListener('click', logout);
+
+    downloadDbBtn.addEventListener('click', downloadDatabaseSqlite);
+
+    searchEl.addEventListener('input', () => {
+      const term = searchEl.value.trim();
+      render(filterRecords(allRecords, term));
+    });
+
+    // Initialize app
+    checkAuth();
+
+    const detail = document.getElementById('detail');
+    const detailGrid = document.getElementById('detailGrid');
+    const detailTitle = document.getElementById('detailTitle');
+    const detailClose = document.getElementById('detailClose');
+
+    function pretty(value){
+      const v = parseMaybeJson(value);
+      if(typeof v === 'string') return v;
+      try{ return JSON.stringify(v, null, 2); }catch{ return String(v); }
+    }
+
+    function renderDetails(rec){
+      detailGrid.innerHTML = '';
+      if(!rec){ detail.hidden = true; return; }
+      detailTitle.textContent = `MO: ${rec.MO_Name ?? rec.id ?? ''}`;
+      const frag = document.createDocumentFragment();
+      const keys = Object.keys(rec).sort();
+      for(const k of keys){
+        const item = el(`
+          <div class="kv-item">
+            <div class="kv-key">${k}</div>
+            <div class="kv-val"></div>
+          </div>
+        `);
+        item.querySelector('.kv-val').textContent = pretty(rec[k]);
+        frag.appendChild(item);
+      }
+      detailGrid.appendChild(frag);
+      detail.hidden = false;
+    }
+
+    function selectRecord(rec){
+      selectedRecord = rec;
+      renderDetails(selectedRecord);
+      // Scroll to detail section
+      detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    detailClose.addEventListener('click', ()=>{ selectedRecord = null; detail.hidden = true; });
+  </script>
+
+
+  
+</body>
+</html>
+
+

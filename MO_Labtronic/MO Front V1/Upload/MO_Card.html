@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MO Details - LabTronic MO System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://mo.lab-tronic.com/logo.ico">
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-section">
+                    <a href="dashboard.html" style="text-decoration: none; display: block;">
+                        <img src="https://mo.lab-tronic.com/logo.png" alt="Logo" class="logo">
+                    </a>
+                </div>
+                <div class="user-details-section">
+                    <div class="user-info">
+                        <h3 id="userName">Loading...</h3>
+                        <p id="userRole">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>📊</span>
+                    Dashboard
+                </a>
+                <a href="Projects.html" class="nav-item" data-access="view_all">
+                    <span>📁</span>
+                    Projects
+                </a>
+                <a href="Man_Order.html" class="nav-item" data-access="view_all">
+                    <span>🏭</span>
+                    Manufacturing Orders
+                </a>
+                <a href="Add_MO.html" class="nav-item" data-access="add_mo">
+                    <span>➕</span>
+                    Add MO
+                </a>
+                <a href="Add_Proj.html" class="nav-item" data-access="add_project">
+                    <span>🆕</span>
+                    Add Project
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="Account.html" class="nav-item">
+                    <span>👤</span>
+                    Account
+                </a>
+                <button onclick="logout()" class="nav-item" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;">
+                    <span>🚪</span>
+                    Logout
+                </button>
+            </div>
+            
+            <!-- Mobile Toggle Button -->
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                ✕
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <button class="mobile-toggle" onclick="toggleSidebar()">
+                    ☰
+                </button>
+                <div class="header-content">
+                    <div class="flex items-center gap-3">
+                        <a href="Man_Order.html" class="btn btn-secondary">← MOs</a>
+                        <h1 class="page-title" id="moTitle">MO Details</h1>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content">
+                <!-- MO Info Grid Section -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <div class="flex items-center justify-between">
+                            <h2 class="card-title">MO Information</h2>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-muted-foreground">Completion:</span>
+                                <div class="progress-bar" style="width: 100px;">
+                                    <div class="progress-fill" id="completionBar" style="width: 0%"></div>
+                                    <span class="progress-text" id="completionText">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm text-muted-foreground">MO Name</label>
+                                <p class="font-semibold" id="moName">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">MO Type</label>
+                                <p class="font-semibold" id="moType">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">Project Name</label>
+                                <p class="font-semibold" id="projectName">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">University</label>
+                                <p class="font-semibold" id="university">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">Project Manager</label>
+                                <p class="font-semibold" id="projectManager">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">Design Engineer</label>
+                                <p class="font-semibold" id="designEng">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">Production Engineer</label>
+                                <p class="font-semibold" id="productionEng">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">MO Date</label>
+                                <p class="font-semibold" id="moDate">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes Section -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <div class="flex items-center justify-between">
+                            <h2 class="card-title">Notes</h2>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <!-- Inline Note Form -->
+                        <form id="noteForm" class="mb-4" style="display: flex; flex-direction: column; gap: 0.5em;">
+                            <textarea id="noteContent" class="form-textarea" rows="4" placeholder="Enter your note..."></textarea>
+                            <div style="display: flex; gap: 0.5em;">
+                                <button type="submit" class="btn btn-primary" id="saveNoteBtn">Save Note</button>
+                                <button type="button" class="btn btn-secondary" id="cancelEditBtn" style="display: none;">Cancel</button>
+                            </div>
+                        </form>
+                        <div id="notesList">
+                            <!-- Notes will be loaded here -->
+                        </div>
+                        <div id="noNotes" class="text-center p-6" style="display: none;">
+                            <div class="text-2xl mb-2">📝</div>
+                            <p class="text-muted-foreground">No notes available for this MO.</p>
+                        </div>
+                        <div id="noteMessage" class="text-center mt-2" style="color: #2563eb;"></div>
+                    </div>
+                </div>
+
+                <!-- Files Section -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <div class="flex items-center justify-between">
+                            <h2 class="card-title">Files</h2>
+                            <div class="flex items-center gap-2">
+                                <button class="btn btn-secondary" onclick="downloadAllFiles()">Download All</button>
+                                <button class="btn btn-secondary" onclick="shareAllFiles()">Share All</button>
+                                <button class="btn btn-primary" onclick="markAllFilesAsSent()">Mark All as Sent</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div id="filesList" class="grid grid-cols-1 grid-cols-2 grid-cols-3 gap-4">
+                            <!-- File cards will be loaded here -->
+                        </div>
+                        <div id="noFiles" class="text-center p-6" style="display: none;">
+                            <div class="text-2xl mb-2">📁</div>
+                            <p class="text-muted-foreground">No files uploaded for this MO.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parts Table Section -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <div class="flex items-center justify-between">
+                            <h2 class="card-title">Parts</h2>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-muted-foreground">Progress: <span id="overallProgress">0%</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="table-container responsive-table">
+                            <table class="table" id="partsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Part Code</th>
+                                        <th>Part Name</th>
+                                        <th>Quantity</th>
+                                        <th>Material</th>
+                                        <th>Thickness</th>
+                                        <th>Color</th>
+                                        <th>Processes</th>
+                                        <th>Part Image</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="partsTableBody">
+                                    <!-- Parts will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Changes Button -->
+                <div class="text-center mb-6" id="saveChangesSection" style="display: none;">
+                    <button class="btn btn-primary" id="saveBtn" onclick="saveAllChanges()">
+                        💾 Save Changes
+                    </button>
+                </div>
+
+                <!-- Mark All Processes as Done Section -->
+                <div class="card mb-6" id="markAllProcessesSection">
+                    <div class="card-header">
+                        <h2 class="card-title">Mark all processes as Done:</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="flex flex-wrap gap-2" id="processNamesList">
+                            <!-- Process buttons will be generated here -->
+                        </div>
+                        <div class="mt-4">
+                            <button class="btn btn-primary" id="markAllDoneBtn" onclick="markAllAsDone()">
+                                <span style="color: #2563eb;">✅ Mark All as Done</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center p-6">
+                    <div class="text-2xl mb-2">⏳</div>
+                    <p>Loading MO details...</p>
+                </div>
+
+                <!-- Error State -->
+                <div id="errorState" class="text-center p-6" style="display: none;">
+                    <div class="text-2xl mb-2">❌</div>
+                    <h3 class="text-lg font-semibold mb-2">Error Loading MO</h3>
+                    <p class="text-muted-foreground mb-4" id="errorMessage">Failed to load MO details.</p>
+                    <a href="Man_Order.html" class="btn btn-primary">Back to MOs</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- CAD Preview Modal -->
+    <div id="cadPreviewModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>CAD Preview</h3>
+                <button class="modal-close" onclick="closeCadPreview()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="cadPreviewContent">
+                    <!-- CAD preview content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add new image preview modal -->
+    <div id="imagePreviewModal" class="modal" style="display:none;">
+      <div class="modal-content">
+        <button class="modal-close" onclick="closeImagePreview()">&times;</button>
+        <img id="previewImage" src="" alt="Preview" />
+      </div>
+    </div>
+
+    <style>
+    .full-modal-content {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        display: flex;
+        flex-direction: column;
+    }
+    .image-modal-content {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        height: 95vh !important;
+        max-height: 95vh !important;
+        border-radius: 8px !important;
+        padding: 0 !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin: 2.5vh auto !important;
+    }
+    .image-modal-body {
+        flex: 1 1 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        border-radius: 0 0 8px 8px;
+    }
+    .image-modal-body img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        margin: auto;
+        display: block;
+        border-radius: 0 0 8px 8px;
+    }
+    .note-modal-content {
+        width: 90vw;
+        max-width: 400px;
+        min-width: 0;
+        height: auto;
+        max-height: 80vh;
+        margin: 0;
+        border-radius: 0;
+        background: #fff;
+        box-shadow: none;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+        padding: 0;
+    }
+    .note-modal-body {
+        flex: 1 1 auto;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 1.5em;
+        width: 100%;
+        height: auto;
+        overflow-y: auto;
+    }
+    #noteContent {
+        width: 100%;
+        min-width: 0;
+        min-height: 200px;
+        max-height: 400px;
+        height: 250px;
+        font-size: 1.1em;
+        resize: vertical;
+    }
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      min-width: 100vw;
+      min-height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      background: rgba(0,0,0,0.8);
+      z-index: 3000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .file-card .flex.gap-2.justify-center.mb-2 {
+        justify-content: center !important;
+        align-items: center !important;
+        display: flex !important;
+    }
+    
+    /* Center header content */
+    .header-content {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex: 1;
+    }
+    
+    .header-content .flex {
+        justify-content: center;
+    }
+    
+    @media (max-width: 400px) {
+        .note-modal-content {
+            width: 95vw;
+            max-width: 95vw;
+            min-width: 0;
+            height: 50vh;
+            max-height: 50vh;
+            border-radius: 0;
+            padding: 0;
+            margin: 0;
+            box-shadow: none;
+        }
+        .note-modal-body {
+            padding: 2em;
+            min-height: 40vh;
+        }
+        #noteContent {
+            min-height: 150px;
+            max-height: 200px;
+            height: 150px;
+            font-size: 1em;
+            resize: vertical;
+        }
+        .image-modal-content {
+            width: 100vw !important;
+            max-width: 100vw !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+        }
+        .image-modal-body img {
+            max-width: 98vw;
+            max-height: 70vh;
+        }
+    }
+    #imagePreviewModal.modal {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.8); z-index: 3000; display: flex;
+      align-items: center; justify-content: center;
+    }
+    #imagePreviewModal .modal-content {
+      background: transparent; border: none; box-shadow: none;
+      display: flex; flex-direction: column; align-items: center;
+      position: relative;
+      width: 100vw;
+      max-width: 100vw;
+    }
+    #imagePreviewModal img {
+      max-width: 100vw;
+      max-height: 90vh;
+      border-radius: 8px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.25);
+      cursor: zoom-in;
+      transition: transform 0.2s;
+    }
+    #imagePreviewModal img.zoomed {
+      width: auto;
+      max-width: none;
+      max-height: none;
+      cursor: zoom-out;
+      transform: scale(1.5);
+    }
+    #imagePreviewModal .modal-close {
+      position: absolute;
+      top: -48px;
+      right: 16px;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 2.5rem;
+      cursor: pointer;
+      z-index: 2;
+    }
+    @media (max-width: 600px) {
+      #imagePreviewModal .modal-close {
+        top: 2px;
+        right: 2px;
+        font-size: 2rem;
+      }
+    }
+    </style>
+
+    <script src="https://unpkg.com/pocketbase@0.21.1/dist/pocketbase.umd.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/mo-card.js"></script>
+    <script>
+    // Enable zoom on image click
+    document.addEventListener('DOMContentLoaded', function() {
+      var img = document.getElementById('previewImage');
+      if (img) {
+        img.onclick = function() {
+          this.classList.toggle('zoomed');
+        };
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const user = getCurrentUser && getCurrentUser();
+        document.querySelectorAll('.sidebar-nav [data-access]').forEach(link => {
+            const access = link.getAttribute('data-access');
+            if (access === 'add_project' && (!user || user.Role !== 'Design Engineer')) {
+                link.style.display = 'none';
+            }
+            if (access === 'add_mo' && (!user || (user.Role !== 'Design Engineer' && user.Role !== 'Production Engineer'))) {
+                link.style.display = 'none';
+            }
+        });
+    });
+    </script>
+</body>
+</html> 

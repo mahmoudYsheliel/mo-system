@@ -1,0 +1,137 @@
+{
+  "projects_html_analysis": {
+    "recent_projects_section": {
+      "location": "Line 791-797",
+      "current_implementation": {
+        "section_title": "Recent Projects",
+        "container_id": "recentProjectsGrid",
+        "data_source": "PocketBase Projects collection",
+        "current_behavior": "Shows only the 5 most recent projects",
+        "rendering_function": "renderRecentProjects() at line 1287",
+        "data_fetching": {
+          "function": "loadProjects() at line 1256",
+          "query": "getFullList with sort: '-created' and fields: 'id,Project_Name,Project_Code,created'",
+          "limitation": "Only fetches 5 projects using slice(0, 5)"
+        }
+      },
+      "current_code_structure": {
+        "html_structure": {
+          "section_header": "<div class='section-header'>Recent Projects</div>",
+          "grid_container": "<div class='project-cards-grid' id='recentProjectsGrid'>",
+          "card_template": "Each project card shows Project_Name and creation date"
+        },
+        "javascript_functions": {
+          "loadProjects": "Fetches all projects from PocketBase",
+          "renderRecentProjects": "Renders only first 5 projects",
+          "renderProjectSearchResults": "Renders filtered projects for search"
+        }
+      }
+    },
+    "search_section": {
+      "location": "Line 798-807",
+      "implementation": {
+        "section_title": "Search Projects",
+        "search_input": "projectSearchInput with placeholder 'Search by project name...'",
+        "search_icon": "projectSearchIcon with click functionality",
+        "results_container": "searchProjectsGrid",
+        "functionality": "Real-time filtering of all projects by name"
+      }
+    }
+  },
+  "project_html_data_approach": {
+    "file_purpose": "Individual project details page showing project information and associated MOs",
+    "data_flow": {
+      "url_parameter": "Uses 'project' query parameter to get Project_Code",
+      "project_data_fetching": {
+        "collection": "Projects",
+        "filter": "Project_Code = projectCode",
+        "fields": "Project_Name,Project_Code,University,Lab,Project_Manager,Design_Engineer,Production_Engineer"
+      },
+      "mo_data_fetching": {
+        "collection": "MO_Table",
+        "filter": "Project_Name = project.Project_Name",
+        "sort": "-MO_Date",
+        "fields": "MO_Name,MO_Type,MO_Date"
+      },
+      "process_data_fetching": {
+        "collection": "Parts_Table",
+        "filter": "MO_Name = mo.MO_Name",
+        "fields": "Process1-5 and Process1_Status-Process5_Status"
+      }
+    },
+    "key_functions": {
+      "loadProjectAndMOs": "Main function that orchestrates data loading",
+      "calculateMOStatus": "Determines overall MO status from process statuses",
+      "calculateCompletionPercentage": "Calculates completion percentage from process statuses",
+      "formatMOTypeWithIcon": "Formats MO type with visual icons"
+    },
+    "data_processing": {
+      "status_calculation": "Aggregates process statuses to determine overall MO status",
+      "completion_calculation": "Calculates percentage based on completed processes",
+      "date_formatting": "Formats MO_Date for display"
+    }
+  },
+  "dashboard_html_mo_card_data": {
+    "file_purpose": "Dashboard showing statistics and recent MOs",
+    "mo_card_data_source": {
+      "collection": "MO_Table",
+      "query": "getList(1, 5) with sort: '-MO_Date'",
+      "fields": "MO_Name,MO_Type,Project_Name,MO_Date"
+    },
+    "process_data_integration": {
+      "collection": "Parts_Table",
+      "filter": "MO_Name = mo.MO_Name",
+      "fields": "Process1-5 and Process1_Status-Process5_Status",
+      "purpose": "Calculate MO status and completion percentage"
+    },
+    "key_functions": {
+      "loadRecentMOs": "Fetches and processes recent MOs",
+      "updateRecentMOsTable": "Updates the MO table display",
+      "calculateMOStatus": "Determines status from process statuses",
+      "calculateCompletionPercentage": "Calculates completion percentage",
+      "formatMOType": "Formats MO type with SVG icons"
+    },
+    "data_processing_flow": {
+      "step1": "Fetch 5 most recent MOs from MO_Table",
+      "step2": "For each MO, fetch associated parts from Parts_Table",
+      "step3": "Extract process statuses from parts data",
+      "step4": "Calculate overall status and completion percentage",
+      "step5": "Format data for display with icons and styling"
+    }
+  },
+  "recommendations_for_all_projects": {
+    "modification_needed": "Change renderRecentProjects function to show all projects instead of just 5",
+    "current_limitation": "projects.slice(0, 5) limits display to 5 projects",
+    "proposed_changes": {
+      "function_modification": "Remove the slice(0, 5) limitation",
+      "section_title_update": "Change 'Recent Projects' to 'All Projects'",
+      "pagination_consideration": "Add pagination for large project lists",
+      "sorting_options": "Add sorting by name, date, or other criteria"
+    },
+    "implementation_details": {
+      "line_to_modify": "Line 1295 in renderRecentProjects function",
+      "current_code": "const recent = projects.slice(0, 5);",
+      "proposed_code": "const allProjects = projects;",
+      "section_header_update": "Line 793: Change 'Recent Projects' to 'All Projects'"
+    }
+  },
+  "data_architecture_summary": {
+    "database_collections": {
+      "Projects": "Stores project information (name, code, university, lab, managers)",
+      "MO_Table": "Stores manufacturing orders linked to projects",
+      "Parts_Table": "Stores parts and their process statuses for each MO",
+      "Lab_Codes": "Stores lab information for project creation"
+    },
+    "data_relationships": {
+      "project_to_mo": "One-to-many: Project_Name links Projects to MO_Table",
+      "mo_to_parts": "One-to-many: MO_Name links MO_Table to Parts_Table",
+      "process_statuses": "Embedded in Parts_Table with Process1-5 and Status fields"
+    },
+    "common_patterns": {
+      "authentication_check": "All pages check authentication before loading data",
+      "error_handling": "Try-catch blocks with user-friendly error messages",
+      "data_formatting": "Consistent date formatting and status calculation",
+      "real_time_updates": "Search functionality with immediate filtering"
+    }
+  }
+} 

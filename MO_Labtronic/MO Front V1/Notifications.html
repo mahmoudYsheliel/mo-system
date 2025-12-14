@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - LabTronic MO System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://mo.lab-tronic.com/logo.ico">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- PushAlert -->
+    <script type="text/javascript">
+        (function(d, t) {
+            var g = d.createElement(t),
+            s = d.getElementsByTagName(t)[0];
+            g.src = "https://cdn.pushalert.co/integrate_8adf8eea3e77a71a801a8986cf581ce8.js";
+            s.parentNode.insertBefore(g, s);
+        }(document, "script"));
+    </script>
+    <!-- End PushAlert -->
+    <style>
+        .notification-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: white;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .notification-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .notification-card.unread {
+            border-left: 4px solid #3b82f6;
+        }
+        .notification-card.requires-action {
+            border-left: 4px solid #f59e0b;
+        }
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+        .notification-title {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .notification-time {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .notification-message {
+            color: #4b5563;
+            margin-bottom: 1rem;
+        }
+        .notification-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .notification-type {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            background: #e5e7eb;
+            color: #374151;
+        }
+        .notification-type.info { background: #dbeafe; color: #1e40af; }
+        .notification-type.warning { background: #fef3c7; color: #92400e; }
+        .notification-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .filter-section {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover {
+            background: #f3f4f6;
+        }
+        .filter-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-section">
+                    <a href="dashboard.html" style="text-decoration: none; display: block;">
+                        <img src="https://mo.lab-tronic.com/logo.png" alt="Logo" class="logo">
+                    </a>
+                </div>
+                <div class="user-details-section">
+                    <div class="user-info">
+                        <h3 id="userName">Loading...</h3>
+                        <p id="userRole">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>📊</span>
+                    Dashboard
+                </a>
+                <a href="Projects.html" class="nav-item" data-access="view_all">
+                    <span>📁</span>
+                    Projects
+                </a>
+                <a href="Man_Order.html" class="nav-item" data-access="view_all">
+                    <span>🏭</span>
+                    Manufacturing Orders
+                </a>
+                <a href="Add_MO.html" class="nav-item" data-access="add_mo">
+                    <span>➕</span>
+                    Add MO
+                </a>
+                <a href="Add_Proj.html" class="nav-item" data-access="add_project">
+                    <span>🆕</span>
+                    Add Project
+                </a>
+                <a href="Notifications.html" class="nav-item active">
+                    <span>🔔</span>
+                    Notifications
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="Account.html" class="nav-item">
+                    <span>👤</span>
+                    Account
+                </a>
+                <button onclick="logout()" class="nav-item" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;">
+                    <span>🚪</span>
+                    Logout
+                </button>
+            </div>
+            
+            <!-- Mobile Toggle Button -->
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                ✕
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <button class="mobile-toggle" onclick="toggleSidebar()">
+                    ☰
+                </button>
+                <div class="header-content">
+                    <h1 class="page-title">Notifications</h1>
+                </div>
+            </header>
+
+            <div class="content">
+                <!-- Filter Section -->
+                <div class="filter-section">
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="unread">Unread</button>
+                        <button class="filter-btn" data-filter="action-required">Action Required</button>
+                        <button class="filter-btn" data-filter="mo-completed">MO Completed</button>
+                        <button class="filter-btn" data-filter="notes">Notes</button>
+                    </div>
+                </div>
+
+                <!-- Notifications List -->
+                <div id="notificationsList">
+                    <!-- Notifications will be dynamically loaded here -->
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center p-6">
+                    <div class="text-2xl mb-2">⏳</div>
+                    <p>Loading notifications...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <div class="text-4xl mb-4">🔔</div>
+                    <h3 class="text-lg font-semibold mb-2">No notifications found</h3>
+                    <p>You're all caught up! New notifications will appear here.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/pocketbase@0.21.1/dist/pocketbase.umd.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        const onAuthSuccess = async () => {
+            updateUserInfo();
+            await loadNotifications();
+            setupFilters();
+        };
+
+        if ('pb' in window && pb.authStore.isValid) {
+            onAuthSuccess();
+        } else {
+            // If the auth store isn't valid, we need to wait for the
+            // global auth logic in auth.js to complete. We can listen for a custom event.
+            document.addEventListener('auth-ready', onAuthSuccess);
+        }
+    });
+
+    let allNotifications = [];
+    let currentFilter = 'all';
+
+    async function loadNotifications() {
+        const loadingState = document.getElementById('loadingState');
+        const emptyState = document.getElementById('emptyState');
+        const notificationsList = document.getElementById('notificationsList');
+        
+        try {
+            loadingState.style.display = 'block';
+            emptyState.style.display = 'none';
+            notificationsList.innerHTML = '';
+            
+            const user = getCurrentUser();
+            if (!user) throw new Error('No user found');
+
+            // Fetch notifications for current user (by id or username)
+            const filter = `(Recipient = "${user.id}" || Recipient = "${user.Account_Name}")`;
+            const records = await pb.collection('Notifications').getList(1, 50, {
+                sort: '-created',
+                filter: filter,
+                expand: 'Created_By'
+            });
+
+            // Fetch all unique recipient users
+            const recipientIds = Array.from(new Set(records.items.map(n => n.Recipient)));
+            let users = [];
+            if (recipientIds.length > 0) {
+                users = await pb.collection('Users').getFullList({
+                    filter: recipientIds.map(id => `id="${id}"`).join(' || ')
+                });
+            }
+            const userMap = {};
+            users.forEach(u => { userMap[u.id] = u; });
+            // Attach user info to each notification
+            allNotifications = records.items.map(n => ({
+                ...n,
+                recipientUser: userMap[n.Recipient] || null
+            }));
+            // Apply current filter and render
+            filterAndRenderNotifications();
+            
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+            showError('Failed to load notifications');
+        } finally {
+            loadingState.style.display = 'none';
+        }
+    }
+
+    function filterAndRenderNotifications() {
+        const notificationsList = document.getElementById('notificationsList');
+        const emptyState = document.getElementById('emptyState');
+        
+        let filteredNotifications = allNotifications;
+        
+        // Apply filters
+        switch (currentFilter) {
+            case 'unread':
+                filteredNotifications = allNotifications.filter(n => !n.Action_Taken);
+                break;
+            case 'action-required':
+                filteredNotifications = allNotifications.filter(n => n.Action_Required && !n.Action_Taken);
+                break;
+            case 'mo-completed':
+                filteredNotifications = allNotifications.filter(n => n.Type === 'MO_Status_Completed');
+                break;
+            case 'notes':
+                filteredNotifications = allNotifications.filter(n => n.Type === 'Note_Added');
+                break;
+        }
+        
+        if (filteredNotifications.length === 0) {
+            notificationsList.innerHTML = '';
+            emptyState.style.display = 'block';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        notificationsList.innerHTML = filteredNotifications.map(notification => createNotificationCard(notification)).join('');
+    }
+
+    function createNotificationCard(notification) {
+        const timeAgo = formatTimeAgo(new Date(notification.created));
+        const cardClasses = [
+            'notification-card',
+            !notification.Action_Taken ? 'unread' : '',
+            notification.Action_Required && !notification.Action_Taken ? 'requires-action' : ''
+        ].filter(Boolean).join(' ');
+        const recipientInfo = notification.recipientUser
+            ? `${notification.recipientUser.Full_Name || notification.recipientUser.Account_Name || notification.recipientUser.email} (${notification.recipientUser.Role})`
+            : notification.Recipient;
+        return `
+            <div class="${cardClasses}" id="notification-${notification.id}" onclick="openLink('${notification.Link_To_Action}')">
+                <div class="notification-header">
+                    <div class="notification-title">${notification.Title}</div>
+                    <div class="notification-time">${timeAgo}</div>
+                </div>
+                <div class="notification-message">${notification.Message}</div>
+                <div class="notification-recipient" style="font-size:0.9em;color:#888;margin-bottom:0.5em;">To: ${recipientInfo}</div>
+                <div class="notification-footer">
+                    <span class="notification-type ${notification.Priority}">${notification.Type.replace(/_/g, ' ')}</span>
+                    <div class="notification-actions">
+                        ${notification.Action_Required && !notification.Action_Taken ? 
+                            `<button class="btn btn-primary btn-sm" onclick="markActionTaken(event, '${notification.id}')">
+                                Mark Action Taken
+                            </button>` : ''
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function setupFilters() {
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active state
+                filterButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Update filter and re-render
+                currentFilter = btn.dataset.filter;
+                filterAndRenderNotifications();
+            });
+        });
+    }
+
+    async function markActionTaken(event, notificationId) {
+        event.stopPropagation(); // Prevents card click
+        try {
+            await pb.collection('Notifications').update(notificationId, {
+                Action_Taken: true
+            });
+            
+            // Update local data
+            const notification = allNotifications.find(n => n.id === notificationId);
+            if (notification) {
+                notification.Action_Taken = true;
+            }
+            
+            // Re-render notifications
+            filterAndRenderNotifications();
+            
+            showSuccess('Action marked as taken');
+        } catch (error) {
+            console.error('Error marking action taken:', error);
+            showError('Failed to update notification');
+        }
+    }
+
+    function openLink(link) {
+        window.location.href = link;
+    }
+
+    function formatTimeAgo(date) {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+        
+        if (diffInSeconds < 60) return 'just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+        if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+        return date.toLocaleDateString();
+    }
+
+    function showSuccess(message) {
+        // Implementation of success toast (you can reuse existing one)
+        alert(message);
+    }
+
+    function showError(message) {
+        // Implementation of error toast (you can reuse existing one)
+        alert(message);
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "pocketbase": {
+    "baseUrl": "https://mo.lab-tronic.com/database",
+    "sdkCdn": "https://unpkg.com/pocketbase@0.21.1/dist/pocketbase.umd.js",
+    "collections": [
+      "MO_Table",
+      "Parts_Table",
+      "users"
+    ]
+  }
+}
+

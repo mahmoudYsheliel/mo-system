@@ -1,0 +1,242 @@
+{
+  "mo_html_page_features": {
+    "page_overview": {
+      "purpose": "Detailed Manufacturing Order (MO) management page showing parts, processes, and status tracking",
+      "main_sections": [
+        "MO Header with title and actions",
+        "MO Info Grid with completion tracking",
+        "Notes Section",
+        "Files Section",
+        "Parts Table with processes",
+        "Mark All Processes as Done section"
+      ]
+    },
+    "hiding_empty_processes": {
+      "implementation_location": "Line 1220-1225 in fetchMOData function",
+      "code_logic": {
+        "filter_condition": "index === 0 || (p.value && p.value.trim() !== '')",
+        "explanation": "Process1 is always shown, but Process2-5 are only shown if they have non-empty values",
+        "code_snippet": "].filter((p, index) => index === 0 || (p.value && p.value.trim() !== ''))"
+      },
+      "behavior": {
+        "process1": "Always displayed (required field)",
+        "process2_5": "Only displayed if they contain actual process names",
+        "empty_processes": "Completely hidden from the UI to reduce clutter",
+        "dynamic_rendering": "Process list is generated dynamically based on available data"
+      }
+    },
+    "part_image_fetching": {
+      "implementation_location": "Line 1205-1210 in fetchMOData function",
+      "image_url_generation": {
+        "base_url": "window.pb.baseUrl",
+        "collection": "Parts_Table",
+        "record_id": "record.id",
+        "filename": "record.Part_Pic",
+        "full_url": "${window.pb.baseUrl}/api/files/Parts_Table/${record.id}/${record.Part_Pic}"
+      },
+      "image_display": {
+        "thumbnail_class": "thumbnail",
+        "click_handler": "onclick=\"showImagePreview('${imageUrl}')\"",
+        "error_handling": "onerror=\"console.error('Failed to load image:', this.src);\"",
+        "fallback": "Shows '-' if no image is available"
+      },
+      "image_preview_modal": {
+        "modal_id": "imagePreviewModal",
+        "preview_image_id": "previewImage",
+        "close_button_id": "closePreview",
+        "functionality": {
+          "showImagePreview": "Displays full-size image in modal",
+          "closeImagePreview": "Closes modal and restores scrolling",
+          "escape_key": "Closes modal with Escape key",
+          "click_outside": "Closes modal when clicking outside image"
+        }
+      }
+    },
+    "part_color_square_display": {
+      "implementation_location": "Line 350-380 in getColorCode and formatColorDisplay functions",
+      "color_mapping": {
+        "light grey/gray": "#D3D3D3",
+        "dark grey/gray": "#A9A9A9",
+        "grey/gray": "#808080",
+        "custom_colors": "Uses the color value directly if not in predefined map"
+      },
+      "display_format": {
+        "container": "Flexbox with gap: 8px",
+        "color_text": "Shows original color name",
+        "color_square": {
+          "dimensions": "20px x 20px",
+          "background": "colorCode",
+          "border": "1px solid #ddd",
+          "border_radius": "3px",
+          "flex_shrink": "0"
+        }
+      },
+      "code_structure": {
+        "getColorCode": "Maps color names to hex codes",
+        "formatColorDisplay": "Creates HTML structure with text and color square",
+        "fallback": "Returns '-' if no color is specified"
+      }
+    },
+    "processes_and_status_approach": {
+      "data_structure": {
+        "process_fields": ["Process1", "Process2", "Process3", "Process4", "Process5"],
+        "status_fields": ["Process1_Status", "Process2_Status", "Process3_Status", "Process4_Status", "Process5_Status"],
+        "database_collection": "Parts_Table"
+      },
+      "status_options": {
+        "None": "Default state, no work started",
+        "In Progress": "Work is currently being done",
+        "Done": "Process completed successfully",
+        "Rejected": "Process failed quality check",
+        "Cancelled": "Process was cancelled"
+      },
+      "status_badge_styling": {
+        "status_none": "Gray background, no work started",
+        "status_in_progress": "Orange background, work ongoing",
+        "status_done": "Green background, completed",
+        "status_rejected": "Red background, failed",
+        "status_cancelled": "Dark gray background, cancelled"
+      },
+      "interactive_features": {
+        "click_to_change": "Click status badge to open dropdown",
+        "dropdown_menu": "Shows all status options",
+        "real_time_updates": "Changes are stored in memory until saved",
+        "change_tracking": "statusChanges Map tracks all pending changes"
+      },
+      "completion_calculation": {
+        "method": "Percentage of processes marked as 'Done'",
+        "formula": "(completed_processes / total_processes) * 100",
+        "display": "Progress bar and percentage text",
+        "update_trigger": "Recalculated after each status change"
+      }
+    },
+    "mark_all_processes_as_done_section": {
+      "section_location": "Line 210-225 in HTML structure",
+      "components": {
+        "section_title": "Mark all processes as Done:",
+        "process_buttons_container": "processNamesList",
+        "mark_all_button": "markAllDoneBtn"
+      },
+      "dynamic_process_buttons": {
+        "generation_function": "updateProcessNamesList() at line 1780",
+        "logic": "Scans all process values in the table and creates unique buttons",
+        "button_format": "Mark all [ProcessName] as Done",
+        "sorting": "Process names are sorted alphabetically"
+      },
+      "mark_all_as_done_function": {
+        "function_name": "markAllAsDone() at line 1684",
+        "behavior": {
+          "targets": "All status badges in the table",
+          "action": "Changes all statuses to 'Done'",
+          "ui_feedback": "Shows spinner during update",
+          "change_tracking": "Stores changes in statusChanges Map",
+          "success_message": "Shows 'All statuses updated to Done!'"
+        }
+      },
+      "individual_process_marking": {
+        "function_name": "markAllProcessAsDone(processName) at line 1820",
+        "behavior": {
+          "targets": "All instances of a specific process type",
+          "filtering": "Matches process name exactly",
+          "update_count": "Tracks how many statuses were updated",
+          "success_message": "Shows count of updated statuses"
+        }
+      },
+      "button_states": {
+        "normal": "Shows process name and check icon",
+        "loading": "Shows spinner and 'Updating...' text",
+        "disabled": "Prevents multiple simultaneous updates"
+      }
+    },
+    "notes_feature": {
+      "section_location": "Line 145-165 in HTML structure",
+      "components": {
+        "notes_header": "Notes title with Add Note button",
+        "notes_list": "Container for displaying existing notes",
+        "add_note_modal": "Modal for creating/editing notes"
+      },
+      "note_structure": {
+        "user_name": "Name of the user who created the note",
+        "content": "The actual note text",
+        "created": "Timestamp when note was created",
+        "edited": "Timestamp when note was last edited (optional)"
+      },
+      "add_note_functionality": {
+        "trigger": "Add Note button click",
+        "modal_show": "showAddNoteModal() at line 1535",
+        "form_validation": "Requires non-empty content",
+        "save_function": "saveNote() at line 1560",
+        "database_storage": "Stored as JSON string in MO_Table.Notes field"
+      },
+      "edit_note_functionality": {
+        "trigger": "Edit button on note item",
+        "function": "editNote(noteIndex) at line 1020",
+        "behavior": {
+          "loads_existing_content": "Populates modal with current note text",
+          "changes_modal_title": "Changes to 'Edit Note'",
+          "updates_existing_note": "Modifies note in array and saves"
+        }
+      },
+      "delete_note_functionality": {
+        "trigger": "Delete button on note item",
+        "function": "deleteNote(noteIndex) at line 1050",
+        "confirmation": "Shows confirmation dialog",
+        "behavior": "Removes note from array and updates database"
+      },
+      "note_display": {
+        "author": "Shows user name who created the note",
+        "timestamp": "Formatted date and time",
+        "content": "The note text content",
+        "actions": "Edit and Delete buttons for each note"
+      },
+      "data_persistence": {
+        "storage_format": "JSON string in MO_Table.Notes field",
+        "parsing": "Handles both string and array formats",
+        "error_handling": "Graceful fallback if parsing fails"
+      }
+    },
+    "additional_features": {
+      "mo_selection": {
+        "dropdown": "Select MO from available options",
+        "url_parameter": "Uses mo_name query parameter",
+        "auto_load": "Loads MO data when selection changes"
+      },
+      "file_management": {
+        "files_grid": "Displays associated files",
+        "download_all": "Bulk download functionality",
+        "share_all": "Share file links",
+        "mark_sent": "Track file delivery status"
+      },
+      "cad_preview": {
+        "modal": "cadPreviewModal for 3D file viewing",
+        "file_types": "Supports various CAD formats",
+        "loading_state": "Shows loading indicator during file fetch"
+      },
+      "change_management": {
+        "change_tracking": "statusChanges Map stores pending changes",
+        "save_function": "saveAllChanges() saves to database",
+        "indicator": "Shows when changes are pending",
+        "batch_update": "Updates all changes in single operation"
+      },
+      "completion_tracking": {
+        "progress_bar": "Visual completion indicator",
+        "percentage_calculation": "Based on completed processes",
+        "real_time_updates": "Updates as statuses change"
+      }
+    },
+    "data_flow_summary": {
+      "initial_load": "fetchMOData() loads parts and processes",
+      "status_changes": "Stored in memory, saved via saveAllChanges()",
+      "notes_management": "Direct database updates for add/edit/delete",
+      "image_handling": "Direct file URLs from PocketBase API",
+      "completion_calculation": "Real-time based on process statuses"
+    },
+    "error_handling": {
+      "authentication": "Redirects to login if not authenticated",
+      "data_fetching": "Shows error messages in table cells",
+      "image_loading": "Console errors for failed image loads",
+      "note_operations": "Alert messages for note errors",
+      "status_updates": "Error messages in changes indicator"
+    }
+  }
+} 

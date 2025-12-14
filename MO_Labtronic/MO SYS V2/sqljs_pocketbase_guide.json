@@ -1,0 +1,77 @@
+{
+  "title": "sql.js ⇄ PocketBase: Connection & Upload Guide",
+  "version": "1.0.0",
+  "generated_at": "2025-09-22T11:18:04.841451Z",
+  "overview": {
+    "purpose": "Explain how the single-file HTML app connects to PocketBase, builds a demo SQLite database using sql.js, and uploads rows (including a file blob) into a PocketBase collection.",
+    "features": [
+      "PocketBase client with health check, token refresh, and safe re-init on base URL change",
+      "Login via an auth-enabled collection",
+      "Building a sample SQLite .db (table Test: id, R, P, T) using sql.js",
+      "Reading rows from .db and uploading into PocketBase with file field",
+      "Upsert-by-ext_id when supported, fallback to create-only when not"
+    ],
+    "prerequisites": [
+      "A running PocketBase instance (e.g., https://mo.lab-tronic.com/database)",
+      "An auth-enabled collection for login (e.g., Accounts_T)",
+      "A target collection (e.g., TEST_DB) with fields: R (text), T (text), P (file), ext_id (text or number, optional but required for true upsert)",
+      "CORS rules allowing your page origin to access the PocketBase API"
+    ]
+  },
+  "snippets": {
+    "connect_to_pocketbase": {
+      "description": "Create a PocketBase client, disable auto-cancellation, watch token changes, and run a health check.",
+      "code": "import PocketBase from 'https://unpkg.com/pocketbase@0.21.1/dist/pocketbase.es.mjs';\n\n// Create client\nlet pb = new PocketBase('https://mo.lab-tronic.com/database');\n\n// Recommended for multi-request flows to avoid aborted calls\npb.autoCancellation(false);\n\n// React to auth token changes (optional UI updates)\npb.authStore.onChange(() => {\n  console.log('Auth changed. Is valid?', pb.authStore.isValid);\n}, true);\n\n// Health check\ntry {\n  const health = await pb.health.check();\n  console.log('PB health:', health);\n} catch (e) {\n  console.error('PB health check failed:', e);\n}\n"
+    },
+    "login_with_password": {
+      "description": "Authenticate against an auth-enabled collection (e.g., Accounts_T).",
+      "code": "const AUTH_COLLECTION = 'Accounts_T';\nconst email = 'user@example.com';\nconst password = 'secret';\n\ntry {\n  await pb.collection(AUTH_COLLECTION).authWithPassword(email, password);\n  console.log('Logged in as:', pb.authStore.model?.email || pb.authStore.model?.id);\n} catch (e) {\n  if (e?.status === 404) {\n    console.error('Auth failed: check collection name and enable auth on it.');\n  } else if (e?.status === 401) {\n    console.error('Invalid email/password or auth rules.');\n  } else {\n    console.error('Login error:', e);\n  }\n}\n"
+    },
+    "refresh_auth_token": {
+      "description": "Refresh the auth token when the page reloads and a token exists.",
+      "code": "const AUTH_COLLECTION = 'Accounts_T';\n\nif (pb.authStore.isValid) {\n  try {\n    await pb.collection(AUTH_COLLECTION).authRefresh();\n    console.log('Auth refreshed.');\n  } catch (e) {\n    pb.authStore.clear();\n    console.warn('Auth refresh failed. Cleared token.', e);\n  }\n}\n"
+    },
+    "build_sqlite_db_with_sqljs": {
+      "description": "Use sql.js to create a demo SQLite DB (table Test) and insert a row with a BLOB image.",
+      "code": "// Load sql.js (UMD) in HTML: <script src=\"https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/sql-wasm.js\"></script>\nconst SQL = await window.initSqlJs({\n  locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/${f}`,\n});\n\nconst db = new SQL.Database();\ndb.run(`CREATE TABLE IF NOT EXISTS Test (\n  id INTEGER PRIMARY KEY,\n  R TEXT,\n  P BLOB,\n  T TEXT\n);`);\n\n// Fetch a CORS-enabled image as demo BLOB\nconst resp = await fetch('https://upload.wikimedia.org/wikipedia/commons/a/a3/June_odd-eyed-cat.jpg');\nconst bytes = new Uint8Array(await resp.arrayBuffer());\n\nconst stmt = db.prepare('INSERT INTO Test (id, R, P, T) VALUES (?, ?, ?, ?)');\nstmt.run([1, 'z1c6649jj2yl9bw', bytes, 'TTTT']);\nstmt.free();\n\n// Export DB to Uint8Array and download\nconst bin = db.export();\nconst blob = new Blob([bin], { type: 'application/octet-stream' });\nconst url = URL.createObjectURL(blob);\nconst a = Object.assign(document.createElement('a'), { href: url, download: 'test.sqlite.db' });\ndocument.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);\n"
+    },
+    "read_rows_from_sqlite_file": {
+      "description": "Open an uploaded .db file with sql.js and read rows from Test(id,R,P,T).",
+      "code": "const SQL = await window.initSqlJs({\n  locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/${f}`,\n});\n\n// Suppose 'file' is a File from <input type=\"file\">\nconst buf = new Uint8Array(await file.arrayBuffer());\nconst db = new SQL.Database(buf);\n\n// Ensure table exists\nconst tables = db.exec(\"SELECT name FROM sqlite_master WHERE type='table' AND name='Test'\");\nif (!tables.length) throw new Error(\"No table named 'Test' in this DB.\");\n\n// Read rows\nconst res = db.exec('SELECT id, R, P, T FROM Test');\nif (!res.length) throw new Error(\"No rows in table 'Test'.\");\n\nconst rows = res[0].values; // [[id,R,P,T], ...]\nconsole.log('Rows:', rows.length);\n"
+    },
+    "prepare_file_field_from_blob": {
+      "description": "Turn a Uint8Array BLOB into a File with a guessed MIME/extension for PocketBase file fields.",
+      "code": "function guessImageExt(bytes = new Uint8Array()) {\n  if (bytes.length >= 4) {\n    if (bytes[0]===0x89 && bytes[1]===0x50 && bytes[2]===0x4E && bytes[3]===0x47) return {ext:'png', mime:'image/png'};\n    if (bytes[0]===0xFF && bytes[1]===0xD8) return {ext:'jpg', mime:'image/jpeg'};\n    if (bytes[0]===0x47 && bytes[1]===0x49 && bytes[2]===0x46) return {ext:'gif', mime:'image/gif'};\n    if (bytes[0]===0x42 && bytes[1]===0x4D) return {ext:'bmp', mime:'image/bmp'};\n    if (bytes[0]===0x52 && bytes[1]===0x49 && bytes[2]===0x46 && bytes[3]===0x46) return {ext:'webp', mime:'image/webp'};\n  }\n  return {ext:'bin', mime:'application/octet-stream'};\n}\n\n// Example:\nconst bytes = row.P instanceof Uint8Array ? row.P : new Uint8Array(row.P || []);\nconst { ext, mime } = guessImageExt(bytes);\nconst file = new File([bytes], `row_${row.id ?? 'noid'}_${Date.now()}.${ext}`, { type: mime });\n"
+    },
+    "upsert_or_create_in_pocketbase": {
+      "description": "Upsert by ext_id when supported; fallback to create-only when the filter returns 400 (missing/wrong field).",
+      "code": "async function upsertTestDbRowToPB(row) {\n  if (!pb?.authStore?.isValid) throw new Error('Login to PocketBase first.');\n  const coll = 'TEST_DB';\n  const fileField = 'P';\n\n  // Prepare File from BLOB\n  const bytes = row.P instanceof Uint8Array ? row.P : new Uint8Array(row.P || []);\n  const { ext = 'bin', mime = 'application/octet-stream' } = (guessImageExt(bytes) || {});\n  const file = new File([bytes], `row_${row.id ?? 'noid'}_${Date.now()}.${ext}`, { type: mime });\n\n  const form = new FormData();\n  form.append('R', row.R ?? '');\n  form.append('T', row.T ?? '');\n  form.append(fileField, file);\n\n  // Try upsert by ext_id; if not supported, create without it\n  const extId = row?.id;\n  if (extId == null) throw new Error('Row has no id to map to ext_id.');\n\n  let existing = null;\n  let extIdSupported = true;\n\n  const sanitizeStr = s => String(s).replace(/\"/g, '\\\\\"');\n\n  const tryFilter = async (filter) => {\n    try {\n      return await pb.collection(coll).getFirstListItem(filter);\n    } catch (e) {\n      if (e?.status === 404) return null;      // not found\n      if (e?.status === 400) {                 // invalid filter => ext_id likely missing/wrong type\n        extIdSupported = false; return null;\n      }\n      throw e;\n    }\n  };\n\n  existing = await tryFilter(`ext_id=\\\"${sanitizeStr(extId)}\\\"`);\n  if (!existing && extIdSupported) existing = await tryFilter(`ext_id=${Number(extId)}`);\n\n  if (existing) {\n    await pb.collection(coll).update(existing.id, form);\n    return { mode: 'update', id: existing.id };\n  } else {\n    if (extIdSupported) form.append('ext_id', String(extId));\n    const created = await pb.collection(coll).create(form);\n    if (!extIdSupported) console.warn(`[${coll}] ext_id not supported — created without ext_id`);\n    return { mode: 'create', id: created?.id, extIdSupported };\n  }\n}\n"
+    },
+    "iterate_rows_and_upload": {
+      "description": "Loop over rows from the SQLite file and call the upsert helper; collect success/fail counts.",
+      "code": "const res = db.exec('SELECT id, R, P, T FROM Test');\nconst rows = res[0].values; // [[id,R,P,T], ...]\nlet ok = 0, fail = 0;\nfor (const [id, R, P, T] of rows) {\n  try {\n    await upsertTestDbRowToPB({ id, R, P, T });\n    ok++;\n  } catch (err) {\n    console.error('Upsert failed for id', id, err);\n    fail++;\n  }\n}\nconsole.log(`Upload complete. Success: ${ok} | Failed: ${fail}`);\n"
+    }
+  },
+  "troubleshooting": [
+    {
+      "symptom": "GET /records?...&filter=ext_id%20%3D%20%221%22 returns 400 (Bad Request)",
+      "cause": "The field ext_id is missing in TEST_DB, or the filter type doesn't match the field type.",
+      "fix": "Use the probe-and-fallback upsert (above). Or add ext_id to TEST_DB (text or number) and make it unique for true upsert."
+    },
+    {
+      "symptom": "Health check fails or CORS error",
+      "cause": "Server not reachable or CORS rule doesn’t allow this page’s origin.",
+      "fix": "Verify PB is online and update CORS settings to include the page origin."
+    },
+    {
+      "symptom": "Login fails with 404",
+      "cause": "Wrong auth collection or auth not enabled on that collection.",
+      "fix": "Set the correct auth-enabled collection (e.g., Accounts_T)."
+    },
+    {
+      "symptom": "Uploads succeed but file not visible",
+      "cause": "P is not a file field or allowed MIME types don’t include the uploaded file type.",
+      "fix": "Make P a file field and add required MIME types (e.g., image/*)."
+    }
+  ]
+}

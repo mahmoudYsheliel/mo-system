@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - LabTronic MO System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://mo.lab-tronic.com/logo.ico">
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-section">
+                    <a href="dashboard.html" style="text-decoration: none; display: block;">
+                        <img src="https://mo.lab-tronic.com/logo.png" alt="Logo" class="logo">
+                    </a>
+                </div>
+                <div class="user-details-section">
+                    <div class="user-info">
+                        <h3 id="userName">Loading...</h3>
+                        <p id="userRole">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item active">
+                    <span>📊</span>
+                    Dashboard
+                </a>
+                <a href="Projects.html" class="nav-item" data-access="view_all">
+                    <span>📁</span>
+                    Projects
+                </a>
+                <a href="Man_Order.html" class="nav-item" data-access="view_all">
+                    <span>🏭</span>
+                    Manufacturing Orders
+                </a>
+                <a href="Add_MO.html" class="nav-item" data-access="add_mo">
+                    <span>➕</span>
+                    Add MO
+                </a>
+                <a href="Add_Proj.html" class="nav-item" data-access="add_project">
+                    <span>🆕</span>
+                    Add Project
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="Account.html" class="nav-item">
+                    <span>👤</span>
+                    Account
+                </a>
+                <button onclick="logout()" class="nav-item" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;">
+                    <span>🚪</span>
+                    Logout
+                </button>
+            </div>
+            
+            <!-- Mobile Toggle Button -->
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                ✕
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <button class="mobile-toggle" onclick="toggleSidebar()">
+                    ☰
+                </button>
+                <div class="header-content">
+                    <h1 class="page-title">Dashboard</h1>
+                </div>
+            </header>
+
+            <div class="content">
+                <!-- Statistics Cards -->
+                <div class="grid mb-6">
+                    <div class="card">
+                        <div class="card-content">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Total MOs</p>
+                                    <h3 class="text-2xl font-bold" id="totalMOs">0</h3>
+                                </div>
+                                <div class="text-3xl">🏭</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-content">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Active MOs</p>
+                                    <h3 class="text-2xl font-bold" id="activeMOs">0</h3>
+                                </div>
+                                <div class="text-3xl">⚡</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-content">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Not Started</p>
+                                    <h3 class="text-2xl font-bold" id="notStartedMOs">0</h3>
+                                </div>
+                                <div class="text-3xl">⏳</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-content">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Completed</p>
+                                    <h3 class="text-2xl font-bold" id="completedMOs">0</h3>
+                                </div>
+                                <div class="text-3xl">✅</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Tabs -->
+                <div class="card mb-6">
+                    <div class="card-content">
+                        <div class="flex gap-2" id="filterTabs">
+                            <button class="btn btn-primary filter-tab active" data-filter="all">
+                                All MOs
+                            </button>
+                            <button class="btn btn-secondary filter-tab" data-filter="active">
+                                Active
+                            </button>
+                            <button class="btn btn-secondary filter-tab" data-filter="not-started">
+                                Not Started
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MO Cards Grid -->
+                <div class="grid" id="moCardsContainer">
+                    <!-- MO cards will be dynamically loaded here -->
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center p-6">
+                    <div class="text-2xl mb-2">⏳</div>
+                    <p>Loading Manufacturing Orders...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="text-center p-6" style="display: none;">
+                    <div class="text-4xl mb-4">📋</div>
+                    <h3 class="text-lg font-semibold mb-2">No Manufacturing Orders Found</h3>
+                    <p class="text-muted-foreground mb-4">Get started by creating your first Manufacturing Order.</p>
+                    <a href="Add_MO.html" class="btn btn-primary" data-access="add_mo">
+                        Create MO
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/pocketbase@0.21.1/dist/pocketbase.umd.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const user = getCurrentUser && getCurrentUser();
+        document.querySelectorAll('.sidebar-nav [data-access]').forEach(link => {
+            const access = link.getAttribute('data-access');
+            if (access === 'add_project' && (!user || user.Role !== 'Design Engineer')) {
+                link.style.display = 'none';
+            }
+            if (access === 'add_mo' && (!user || (user.Role !== 'Design Engineer' && user.Role !== 'Production Engineer'))) {
+                link.style.display = 'none';
+            }
+        });
+    });
+    </script>
+</body>
+</html> 

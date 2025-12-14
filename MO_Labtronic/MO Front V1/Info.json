@@ -1,0 +1,384 @@
+{
+    "project": {
+      "name": "LabTronic MO System",
+      "description": "Web application for managing Manufacturing Orders with role-based access control",
+      "logo": "https://mo.lab-tronic.com/logo.png",
+      "responsive": true,
+      "target_devices": ["desktop", "mobile"]
+    },
+    "tech_stack": {
+      "frontend": ["HTML5", "CSS3", "JavaScript (ES6+)"],
+      "backend": "PocketBase",
+      "database_url": "https://mo.lab-tronic.com/database",
+      "authentication": "PocketBase Auth",
+      "file_upload": "PocketBase File API"
+    },
+    "pages": {
+      "index.html": {
+        "type": "login",
+        "title": "Login - LabTronic MO System",
+        "description": "Authentication page with remember me option",
+        "features": [
+          "Email/password login form",
+          "Remember me checkbox",
+          "Session management",
+          "Redirect to dashboard on success",
+          "Error handling for invalid credentials"
+        ],
+        "redirect_after_login": "dashboard.html"
+      },
+      "dashboard.html": {
+        "type": "dashboard",
+        "title": "Dashboard - LabTronic MO System",
+        "description": "Overview of active and not started Manufacturing Orders",
+        "features": [
+          "MO cards display",
+          "Filter by Active/Not Started status",
+          "Quick access to MO details",
+          "Statistics overview"
+        ],
+        "access_control": "all_authenticated_users"
+      },
+      "Man_Order.html": {
+        "type": "search_list",
+        "title": "Manufacturing Orders - LabTronic MO System",
+        "description": "Search and browse all Manufacturing Orders",
+        "features": [
+          "Advanced search with dropdown filters",
+          "Instant search results",
+          "Enter key and search icon support",
+          "Results grouped by status (Not Started, Active, Completed)",
+          "MO cards with progress bars"
+        ],
+        "search_filters": [
+          "MO Name",
+          "MO Type", 
+          "Project Name",
+          "Project Manager",
+          "University",
+          "Date Range"
+        ]
+      },
+      "MO_Card.html": {
+        "type": "detail_view",
+        "title": "MO Details - LabTronic MO System",
+        "description": "Detailed view of a specific Manufacturing Order",
+        "sections": [
+          {
+            "name": "MO Data",
+            "content": ["MO Name", "MO Status", "Project details", "Engineers", "Dates"]
+          },
+          {
+            "name": "Files",
+            "content": ["File list", "Share buttons", "Download buttons", "Mobile/desktop compatibility"]
+          },
+          {
+            "name": "Parts Table",
+            "columns": [
+              "Part Code",
+              "Part Name", 
+              "Quantity",
+              "Material",
+              "Thickness",
+              "Color",
+              "Processes (with status dropdowns)",
+              "Part Image"
+            ]
+          },
+          {
+            "name": "Process Controls",
+            "content": ["Mark all as done button", "Individual process buttons", "Save changes button"]
+          }
+        ],
+        "process_statuses": ["None", "In Progress", "Done", "Rejected", "Cancelled"]
+      },
+      "Add_MO.html": {
+        "type": "form",
+        "title": "Add Manufacturing Order - LabTronic MO System",
+        "description": "Upload and create new Manufacturing Orders",
+        "access_control": "Design Engineer only",
+        "upload_sections": [
+          {
+            "name": "Import MO",
+            "type": "csv_upload",
+            "description": "Upload CSV file with parts data"
+          },
+          {
+            "name": "Upload Parts Images",
+            "type": "folder_upload",
+            "description": "Upload folder containing part images (named by Part_Code)"
+          },
+          {
+            "name": "Upload MO Files",
+            "type": "file_upload",
+            "supported_formats": [
+              "Images: JPG, PNG, GIF, BMP",
+              "CAD: DXF, DWG", 
+              "Archives: ZIP, RAR",
+              "Documents: PDF, DOC, XLS"
+            ]
+          }
+        ],
+        "workflow": [
+          "Upload all required files",
+          "Validate uploads",
+          "Show 'Done' button when all uploads successful",
+          "Process CSV data into database",
+          "Create MO record",
+          "Redirect to new MO_Card.html"
+        ]
+      },
+      "Projects.html": {
+        "type": "list_view",
+        "title": "Projects - LabTronic MO System", 
+        "description": "Browse all projects",
+        "features": [
+          "Project cards display",
+          "Click to view project details",
+          "Role-based filtering (Project Managers see only their projects)"
+        ]
+      },
+      "Proj_Card.html": {
+        "type": "detail_view",
+        "title": "Project Details - LabTronic MO System",
+        "description": "Detailed view of a specific project",
+        "sections": [
+          {
+            "name": "Project Information",
+            "content": ["University", "Lab", "Project Name", "Project Code", "Team members"]
+          },
+          {
+            "name": "Related MOs",
+            "content": ["MO cards for this project", "Click to view MO details"]
+          }
+        ]
+      },
+      "Account.html": {
+        "type": "profile",
+        "title": "Account - LabTronic MO System",
+        "description": "User account information and settings",
+        "features": [
+          "Display current user info",
+          "Show user role",
+          "Account settings",
+          "Profile picture display"
+        ]
+      }
+    },
+    "navigation": {
+      "sidebar": {
+        "toggle_button": "Top left menu button",
+        "behavior": {
+          "mobile": "Full width overlay",
+          "desktop": "Hover overlay"
+        },
+        "items": [
+          {
+            "type": "header",
+            "content": ["Logo", "User Name", "User Role"]
+          },
+          {
+            "type": "navigation",
+            "items": [
+              {"name": "Dashboard", "link": "dashboard.html", "access": "all"},
+              {"name": "Projects", "link": "Projects.html", "access": "all"},
+              {"name": "Manufacturing Orders", "link": "Man_Order.html", "access": "all"},
+              {"name": "Add MO", "link": "Add_MO.html", "access": "Design Engineer only"}
+            ]
+          },
+          {
+            "type": "footer",
+            "items": [
+              {"name": "Account", "link": "Account.html"},
+              {"name": "Logout", "action": "logout"}
+            ]
+          }
+        ]
+      }
+    },
+    "user_roles": {
+      "Design Engineer": {
+        "permissions": ["add_mo", "add_parts", "view_all"],
+        "restrictions": []
+      },
+      "Production Engineer": {
+        "permissions": ["change_process_status", "view_all"],
+        "restrictions": ["cannot_add_mo"]
+      },
+      "Project Manager": {
+        "permissions": ["view_own_projects", "view_related_mos"],
+        "restrictions": ["cannot_see_other_projects", "cannot_add_mo", "cannot_change_status"]
+      },
+      "Supervisor": {
+        "permissions": ["view_all_projects", "view_all_mos", "full_access"],
+        "restrictions": []
+      }
+    },
+    "database": {
+      "platform": "PocketBase",
+      "connection": "const pb = new PocketBase('https://mo.lab-tronic.com/database');",
+      "collections": {
+        "Users": {
+          "collectionId": "_pb_users_auth_",
+          "fields": {
+            "id": "string",
+            "email": "string",
+            "emailVisibility": "boolean",
+            "verified": "boolean",
+            "Full_Name": "string",
+            "Account_Name": "string", 
+            "Role": "select(Design Engineer, Production Engineer, Project Manager, Supervisor)",
+            "avatar": "file",
+            "created": "datetime",
+            "updated": "datetime"
+          }
+        },
+        "MO_Table": {
+          "collectionId": "pbc_919121596",
+          "fields": {
+            "id": "string",
+            "MO_Name": "string",
+            "MO_Type": "string",
+            "Project_Name": "string",
+            "University": "string",
+            "Project_Manager": "string",
+            "Design_Eng": "string",
+            "Production_Eng": "string",
+            "Completed": "number",
+            "MO_Date": "datetime",
+            "Files": "file(multiple)",
+            "Notes": "text",
+            "Files_Status": "string",
+            "created": "datetime",
+            "updated": "datetime"
+          }
+        },
+        "Parts_Table": {
+          "collectionId": "pbc_698726561",
+          "fields": {
+            "id": "string",
+            "MO_Name": "string",
+            "Part_Code": "string",
+            "Part_Name": "string",
+            "Quantity": "number",
+            "Part_Material": "string",
+            "Part_Thickness": "string",
+            "Part_Color": "string",
+            "Process1": "string",
+            "Process1_Status": "select(None, In Progress, Done, Rejected, Cancelled)",
+            "Process2": "string",
+            "Process2_Status": "select(None, In Progress, Done, Rejected, Cancelled)",
+            "Process3": "string", 
+            "Process3_Status": "select(None, In Progress, Done, Rejected, Cancelled)",
+            "Process4": "string",
+            "Process4_Status": "select(None, In Progress, Done, Rejected, Cancelled)",
+            "Process5": "string",
+            "Process5_Status": "select(None, In Progress, Done, Rejected, Cancelled)",
+            "Part_Pic": "file",
+            "Notes": "text",
+            "created": "datetime",
+            "updated": "datetime"
+          }
+        },
+        "Projects": {
+          "collectionId": "pbc_3853224427",
+          "fields": {
+            "id": "string",
+            "University": "string",
+            "Lab": "string",
+            "Project_Name": "string",
+            "Project_Code": "string",
+            "Project_Manager": "string",
+            "Design_Engineer": "string",
+            "Production_Engineer": "string",
+            "created": "datetime",
+            "updated": "datetime"
+          }
+        }
+      }
+    },
+    "csv_upload_format": {
+      "description": "CSV file format for importing MO parts",
+      "filename_format": "MO-Name_MO-Type_Project-Code.csv",
+      "example": "MO-22-5-2025-A1_SheetMetal_AUT-MNLT.csv",
+      "columns": [
+        "Part_Code",
+        "Part_Name", 
+        "Quantity",
+        "Part_Material",
+        "Part_Thickness",
+        "Part_Color",
+        "Process1",
+        "Process2", 
+        "Process3",
+        "Process4",
+        "Process5"
+      ],
+      "processing_logic": [
+        "Parse filename to extract MO_Name, MO_Type, Project_Code",
+        "Lookup project details using Project_Code",
+        "Create parts records in Parts_Table",
+        "Match part images by Part_Code filename",
+        "Create MO record in MO_Table",
+        "Associate uploaded files with MO"
+      ]
+    },
+    "styling_requirements": {
+      "responsive_design": true,
+      "mobile_first": true,
+      "framework": "Custom CSS or lightweight framework",
+      "components": [
+        "Cards for MO/Project display",
+        "Sidebar navigation",
+        "Search bars with dropdowns", 
+        "File upload areas",
+        "Progress bars",
+        "Status badges",
+        "Data tables",
+        "Modal dialogs"
+      ],
+      "color_scheme": "Professional blue/white theme",
+      "typography": "Clean, readable fonts"
+    },
+    "functionality_requirements": {
+      "authentication": {
+        "login_persistence": "Remember me option",
+        "session_management": "Automatic session validation",
+        "role_based_access": "Hide/show features based on user role"
+      },
+      "search": {
+        "instant_search": true,
+        "enter_key_support": true,
+        "multiple_filters": true,
+        "real_time_results": true
+      },
+      "file_handling": {
+        "upload_validation": "Check file types and sizes",
+        "image_preview": true,
+        "download_functionality": true,
+        "share_functionality": true,
+        "mobile_compatibility": true
+      },
+      "data_management": {
+        "csv_parsing": "Parse and validate CSV data",
+        "image_matching": "Match images to parts by filename",
+        "status_updates": "Real-time process status changes",
+        "progress_tracking": "Calculate completion percentages"
+      }
+    },
+    "security_considerations": [
+      "Input validation for all forms",
+      "File type validation for uploads",
+      "Role-based access control",
+      "Session management",
+      "XSS prevention",
+      "CSRF protection"
+    ],
+    "performance_requirements": [
+      "Fast page loads",
+      "Efficient search",
+      "Optimized images",
+      "Minimal JavaScript bundle size",
+      "Responsive design performance"
+    ]
+  }

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Manufacturing Order - LabTronic MO System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://mo.lab-tronic.com/logo.ico">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- PushAlert -->
+    <script type="text/javascript">
+        (function(d, t) {
+            var g = d.createElement(t),
+            s = d.getElementsByTagName(t)[0];
+            g.src = "https://cdn.pushalert.co/integrate_8adf8eea3e77a71a801a8986cf581ce8.js";
+            s.parentNode.insertBefore(g, s);
+        }(document, "script"));
+    </script>
+    <!-- End PushAlert -->
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-section">
+                    <a href="dashboard.html" style="text-decoration: none; display: block;">
+                        <img src="https://mo.lab-tronic.com/logo.png" alt="Logo" class="logo">
+                    </a>
+                </div>
+                <div class="user-details-section">
+                    <div class="user-info">
+                        <h3 id="userName">Loading...</h3>
+                        <p id="userRole">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>📊</span>
+                    Dashboard
+                </a>
+                <a href="Projects.html" class="nav-item" data-access="view_all">
+                    <span>📁</span>
+                    Projects
+                </a>
+                <a href="Man_Order.html" class="nav-item" data-access="view_all">
+                    <span>🏭</span>
+                    Manufacturing Orders
+                </a>
+                <a href="Add_MO.html" class="nav-item active" data-access="add_mo">
+                    <span>➕</span>
+                    Add MO
+                </a>
+                <a href="Add_Proj.html" class="nav-item" data-access="add_project">
+                    <span>🆕</span>
+                    Add Project
+                </a>
+                <a href="Notifications.html" class="nav-item">
+                    <span>🔔</span>
+                    Notifications
+                    <span id="notification-badge" class="badge-count" style="display: none;"></span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="Account.html" class="nav-item">
+                    <span>👤</span>
+                    Account
+                </a>
+                <button onclick="logout()" class="nav-item" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;">
+                    <span>🚪</span>
+                    Logout
+                </button>
+            </div>
+            
+            <!-- Mobile Toggle Button -->
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                ✕
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <button class="mobile-toggle" onclick="toggleSidebar()">
+                    ☰
+                </button>
+                <div class="header-content">
+                    <h1 class="page-title">Add Manufacturing Order</h1>
+                </div>
+            </header>
+
+            <div class="content">
+                <!-- Progress Indicator -->
+                <div class="card mb-6">
+                    <div class="card-content">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-lg font-semibold">Upload Progress</h2>
+                            <span class="text-sm text-muted-foreground" id="progressText">0/3 Complete</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload Sections -->
+                <div class="grid grid-cols-1 gap-6">
+                    <!-- CSV Upload Section -->
+                    <div class="card" id="csvSection">
+                        <div class="card-header">
+                            <h2 class="card-title">1. Import MO (CSV)</h2>
+                            <p class="card-subtitle">Upload CSV file with parts data</p>
+                        </div>
+                        <div class="card-content">
+                            <div class="file-upload" id="csvUpload" onclick="document.getElementById('csvFile').click()">
+                                <input type="file" id="csvFile" accept=".csv" onchange="handleCSVUpload(event)">
+                                <div class="upload-icon">📄</div>
+                                <h3 class="font-semibold mb-2">Upload CSV File</h3>
+                                <p class="text-muted-foreground mb-4">
+                                    Drag and drop your CSV file here, or click to browse
+                                </p>
+                                <p class="text-sm text-muted-foreground">
+                                    Expected format: MO-Name_MO-Type_Project-Code.csv<br>
+                                    Example: MO-22-5-2025-A1_SheetMetal_AUT-MNLT.csv
+                                </p>
+                            </div>
+                            
+                            <div id="csvPreview" class="mt-4" style="display: none;">
+                                <h3 class="font-semibold mb-2">CSV Preview</h3>
+                                <div class="table-container">
+                                    <table class="table" id="csvTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Part Code</th>
+                                                <th>Part Name</th>
+                                                <th>Quantity</th>
+                                                <th>Material</th>
+                                                <th>Thickness</th>
+                                                <th>Color</th>
+                                                <th>Process 1</th>
+                                                <th>Process 2</th>
+                                                <th>Process 3</th>
+                                                <th>Process 4</th>
+                                                <th>Process 5</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="csvTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Parts Images Upload Section -->
+                    <div class="card" id="imagesSection">
+                        <div class="card-header">
+                            <h2 class="card-title">2. Upload Parts Images</h2>
+                            <p class="card-subtitle">Upload folder containing part images (named by Part_Code)</p>
+                        </div>
+                        <div class="card-content">
+                            <div class="file-upload" id="imagesUpload" onclick="document.getElementById('imagesFolder').click()">
+                                <input type="file" id="imagesFolder" webkitdirectory directory multiple onchange="handleImagesUpload(event)">
+                                <div class="upload-icon">🖼️</div>
+                                <h3 class="font-semibold mb-2">Upload Images Folder</h3>
+                                <p class="text-muted-foreground mb-4">
+                                    Select a folder containing part images
+                                </p>
+                                <p class="text-sm text-muted-foreground">
+                                    Images should be named by Part_Code (e.g., PART001.jpg)
+                                </p>
+                            </div>
+                            
+                            <div id="imagesPreview" class="mt-4" style="display: none;">
+                                <h3 class="font-semibold mb-2">Images Preview</h3>
+                                <div class="grid grid-cols-2 grid-cols-4 gap-4" id="imagesGrid"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MO Files Upload Section -->
+                    <div class="card" id="filesSection">
+                        <div class="card-header">
+                            <h2 class="card-title">3. Upload MO Files</h2>
+                            <p class="card-subtitle">Upload additional MO files</p>
+                        </div>
+                        <div class="card-content">
+                            <div class="file-upload" id="filesUpload" onclick="document.getElementById('moFiles').click()">
+                                <input type="file" id="moFiles" multiple onchange="handleFilesUpload(event)">
+                                <div class="upload-icon">📁</div>
+                                <h3 class="font-semibold mb-2">Upload MO Files</h3>
+                                <p class="text-muted-foreground mb-4">
+                                    Drag and drop files here, or click to browse
+                                </p>
+                                <div class="text-sm text-muted-foreground">
+                                    <p class="mb-2">Supported formats:</p>
+                                    <ul class="list-disc list-inside space-y-1">
+                                        <li>Images: JPG, PNG, GIF, BMP</li>
+                                        <li>CAD: DXF, DWG</li>
+                                        <li>Archives: ZIP, RAR</li>
+                                        <li>Documents: PDF, DOC, XLS</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div id="filesPreview" class="mt-4" style="display: none;">
+                                <h3 class="font-semibold mb-2">Files Preview</h3>
+                                <div class="grid grid-cols-1 grid-cols-2 gap-4" id="filesGrid"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-center gap-4 mt-8">
+                    <button class="btn btn-secondary" onclick="resetForm()">Reset</button>
+                    <button class="btn btn-primary" id="doneBtn" onclick="createMO()" disabled>Create MO</button>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center p-6" style="display: none;">
+                    <div class="text-2xl mb-2">⏳</div>
+                    <p>Creating Manufacturing Order...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/pocketbase@0.21.1/dist/pocketbase.umd.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/add-mo.js"></script>
+    <script>
+  document.addEventListener('auth-ready', function () {
+    updateNavigation(); // use the function from auth.js
+});
+
+    </script>
+</body>
+</html> 

@@ -1,0 +1,119 @@
+{
+    "notification_scenarios": [
+      {
+        "scenario": "MO_Creation",
+        "triggered_by": "Design Engineer",
+        "description": "A new MO-Card is created by the Design Engineer.",
+        "recipients": [
+          "Project Manager (of the project)",
+          "Production Engineers",
+          "Supervisors (subscribed to the project)"
+        ],
+        "action_required": true,
+        "notification_structure": {
+          "Title": "New MO-Card Created",
+          "Message": "MO-Card #{MO_ID} was created by {Created_By} for the {Process_Name} process under Project {Project_ID}.",
+          "Type": "MO_Creation",
+          "Entity_Type": "MO-Card",
+          "Entity_ID": "{MO_ID}",
+          "Project_ID": "{Project_ID}",
+          "Process_Name": "{Process_Name}",
+          "Created_By": "{Created_By}",
+          "Created_At": "{Created_At}",
+          "Recipient": "{Recipient}",
+          "Priority": "info",
+          "Action_Required": true,
+          "Action_Taken": false,
+          "Link_To_Action": "/mo-cards/{MO_ID}?highlight=overview",
+          "created": "{Created_At}",
+          "updated": "{Created_At}"
+        }
+      },
+      {
+        "scenario": "Part_Process_Status_Update",
+        "triggered_by": "Production Engineer",
+        "description": "A process status under a part is updated by a Production Engineer.",
+        "recipients": [
+          "Project Manager (of the project)",
+          "Supervisors (subscribed to the project)"
+        ],
+        "action_required": false,
+        "notification_structure": {
+          "Title": "Part Process Status Updated",
+          "Message": "Process '{Process_Name}' of Part #{Entity_ID} in MO #{MO_ID} was updated from '{Old_Status}' to '{New_Status}' by {Created_By}.",
+          "Type": "Part_Process_Status_Update",
+          "Entity_Type": "Part",
+          "Entity_ID": "{Part_ID}",
+          "MO_ID": "{MO_ID}",
+          "Project_ID": "{Project_ID}",
+          "Process_Name": "{Process_Name}",
+          "Old_Status": "{Old_Status}",
+          "New_Status": "{New_Status}",
+          "Created_By": "{Created_By}",
+          "Created_At": "{Created_At}",
+          "Recipient": "{Recipient}",
+          "Priority": "info",
+          "Action_Required": false,
+          "Link_To_Action": "/mo-cards/{MO_ID}/parts/{Part_ID}?highlight=process_{Process_Name}",
+          "created": "{Created_At}",
+          "updated": "{Created_At}"
+        }
+      },
+      {
+        "scenario": "Note_Added",
+        "triggered_by": "Any User",
+        "description": "A user adds a note to an MO-Card.",
+        "recipients": [
+          "Project Manager (of the project)",
+          "Supervisors (subscribed to the project)"
+        ],
+        "action_required": false,
+        "notification_structure": {
+          "Title": "Note Added to MO",
+          "Message": "A note was added to MO-Card #{MO_ID} by {Created_By}.",
+          "Type": "Note_Added",
+          "Entity_Type": "MO-Card",
+          "Entity_ID": "{MO_ID}",
+          "Project_ID": "{Project_ID}",
+          "Created_By": "{Created_By}",
+          "Created_At": "{Created_At}",
+          "Recipient": "{Recipient}",
+          "Priority": "info",
+          "Action_Required": false,
+          "Link_To_Action": "/mo-cards/{MO_ID}/notes",
+          "created": "{Created_At}",
+          "updated": "{Created_At}"
+        }
+      },
+      {
+        "scenario": "MO_Status_Completed",
+        "triggered_by": "Production Engineer",
+        "description": "A Production Engineer marks the MO status as 'Completed'.",
+        "recipients": [
+          "Project Manager (of the project)",
+          "Supervisors (subscribed to the project)"
+        ],
+        "action_required": true,
+        "notification_structure": {
+          "Title": "MO Completed",
+          "Message": "MO-Card #{MO_ID} has been marked as Completed by {Created_By}. Please review.",
+          "Type": "MO_Status_Completed",
+          "Entity_Type": "MO-Card",
+          "Entity_ID": "{MO_ID}",
+          "Old_Status": "In Progress",
+          "New_Status": "Completed",
+          "Project_ID": "{Project_ID}",
+          "Created_By": "{Created_By}",
+          "Created_At": "{Created_At}",
+          "Recipient": "{Recipient}",
+          "Priority": "warning",
+          "Action_Required": true,
+          "Action_Taken": false,
+          "Link_To_Action": "/mo-cards/{MO_ID}?highlight=status",
+          "created": "{Created_At}",
+          "updated": "{Created_At}"
+        }
+      }
+    ]
+  }
+  

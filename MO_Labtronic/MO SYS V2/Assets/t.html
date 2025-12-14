@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>sql.js ⇄ PocketBase (Connected & Robust)</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; color:#111827; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+    input, button { font-size:14px; padding:8px 12px; border-radius:8px; border:1px solid #e5e7eb; }
+    button { cursor:pointer; background:#2563eb; color:#fff; border:none; }
+    button.secondary { background:#6b7280; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    .card { border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:16px; background:#fff; }
+    .ok { color:#059669; }
+    .warn { color:#b45309; }
+    pre { background:#0b1020; color:#d1e4ff; padding:12px; border-radius:10px; overflow:auto; max-height:40vh; }
+    .muted { color:#6b7280; font-size:12px; }
+    label small { color:#6b7280; }
+    code.k { background:#eef2ff; padding:0 4px; border-radius:4px; }
+  </style>
+
+  <!-- sql.js UMD -->
+  <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/sql-wasm.js"></script>
+</head>
+<body>
+  <h1>sql.js ⇄ PocketBase</h1>
+
+  <div class="card">
+    <h3>Login to PocketBase</h3>
+    <div class="row">
+      <label>
+        <input id="pbBase" style="min-width:360px" placeholder="https://mo.lab-tronic.com/database" />
+        <div class="muted"><small>PB Base URL</small></div>
+      </label>
+      <input id="email" type="email" placeholder="email@example.com" />
+      <input id="password" type="password" placeholder="password" />
+      <button id="loginBtn">Login</button>
+      <button id="logoutBtn" class="secondary">Logout</button>
+      <span id="authState" class="muted">Not logged in</span>
+    </div>
+    <div class="row">
+      <label>
+        <input id="authCollection" value="Accounts_T" />
+        <div class="muted"><small>Auth collection (must be <em>auth</em>-enabled)</small></div>
+      </label>
+      <label>
+        <input id="targetCollection" value="TEST_DB" />
+        <div class="muted"><small>Target collection (fields: <code>ext_id</code> (text/number), <code>R</code> (text), <code>T</code> (text), <code>P</code> (file))</small></div>
+      </label>
+      <label>
+        <input id="fileField" value="P" />
+        <div class="muted"><small>File field name</small></div>
+      </label>
+      <button id="healthBtn" class="secondary">Health</button>
+      <button id="refreshTokenBtn" class="secondary">Refresh Token</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Build a sample .db</h3>
+    <div class="row">
+      <button id="buildBtn" disabled>Build & Download DB</button>
+      <span class="muted">Enables once sql.js is ready.</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Upload an existing .db to PocketBase</h3>
+    <div class="row">
+      <button id="uploadDbBtn" disabled>⬆️ Upload DB → PB</button>
+      <input id="dbFileInput" type="file" accept=".db,.sqlite,.sqlite3" hidden />
+      <span class="muted">Reads <code>Test(id,R,P,T)</code> and upserts into target collection. File goes to <code class="k">file field</code>.</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Log</h3>
+    <pre id="log">Initializing…\n</pre>
+  </div>
+
+  <script type="module">
+    import PocketBase from 'https://unpkg.com/pocketbase@0.21.1/dist/pocketbase.es.mjs';
+
+    /* -------------------- Elements -------------------- */
+    const logEl = document.getElementById('log');
+    const log = (...a) => { logEl.textContent += a.join(' ') + '\n'; logEl.scrollTop = logEl.scrollHeight; };
+
+    const authState = document.getElementById('authState');
+    const emailEl = document.getElementById('email');
+    const passEl  = document.getElementById('password');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    const pbBaseEl = document.getElementById('pbBase');
+    const authCollectionEl = document.getElementById('authCollection');
+    const targetCollectionEl = document.getElementById('targetCollection');
+    const fileFieldEl = document.getElementById('fileField');
+
+    const buildBtn = document.getElementById('buildBtn');
+    const uploadDbBtn = document.getElementById('uploadDbBtn');
+    const dbFileInput = document.getElementById('dbFileInput');
+    const healthBtn = document.getElementById('healthBtn');
+    const refreshTokenBtn = document.getElementById('refreshTokenBtn');
+
+    /* -------------------- PocketBase Client -------------------- */
+    let pb = new PocketBase('https://mo.lab-tronic.com/database');
+    pb.autoCancellation(false);
+    pb.authStore.onChange(() => updateAuthState(), true);
+    pbBaseEl.value = pb.baseUrl;
+
+    function updateAuthState() {
+      if (pb.authStore.isValid && pb.authStore.model) {
+        const u = pb.authStore.model;
+        authState.textContent = `Logged in as ${u.email || u.username || u.id}`;
+        authState.className = 'ok';
+      } else {
+        authState.textContent = 'Not logged in';
+        authState.className = 'warn';
+      }
+    }
+
+    function formatPbError(e){
+      const status = e?.status ?? e?.response?.status;
+      const data   = e?.data || e?.response?.data;
+      const msg    = e?.message || data?.message || String(e);
+      return `[${status ?? 'no-status'}] ${msg} ${data ? JSON.stringify(data) : ''}`;
+    }
+
+    async function testPocketBase() {
+      try { log('PB health:', JSON.stringify(await pb.health.check())); }
+      catch (e) { log('PB health check failed:', formatPbError(e)); }
+    }
+
+    async function tryRefreshAuth() {
+      const authCol = (authCollectionEl.value.trim() || 'Accounts_T');
+      if (!pb.authStore.isValid) { log('No token to refresh.'); return; }
+      try { await pb.collection(authCol).authRefresh(); updateAuthState(); log('Auth refreshed.'); }
+      catch (e) { pb.authStore.clear(); updateAuthState(); log('Auth refresh failed:', formatPbError(e)); }
+    }
+
+    updateAuthState();
+
+    pbBaseEl.addEventListener('change', () => {
+      try {
+        pb.authStore.clear();
+        pb = new PocketBase(pbBaseEl.value.trim());
+        pb.autoCancellation(false);
+        pb.authStore.onChange(() => updateAuthState(), true);
+        updateAuthState();
+        void testPocketBase();
+        void tryRefreshAuth();
+        log('Set PB base to', pb.baseUrl);
+      } catch (e) { log('Invalid PB URL'); }
+    });
+
+    healthBtn.addEventListener('click', () => void testPocketBase());
+    refreshTokenBtn.addEventListener('click', () => void tryRefreshAuth());
+
+    loginBtn.addEventListener('click', async () => {
+      try {
+        loginBtn.disabled = true;
+        const email = emailEl.value.trim();
+        const pass = passEl.value;
+        const authCol = authCollectionEl.value.trim() || 'Users';
+        if (!email || !pass) throw new Error('Enter email and password.');
+        await pb.collection(authCol).authWithPassword(email, pass);
+        updateAuthState();
+        log('Logged in.');
+      } catch (e) {
+        const status = e?.status;
+        if (status === 404) alert('Auth failed: check collection name and enable auth on it.');
+        else if (status === 401) alert('Invalid email/password or auth rules.');
+        else alert(formatPbError(e));
+        log('Login error:', formatPbError(e));
+      } finally {
+        loginBtn.disabled = false;
+      }
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      pb.authStore.clear();
+      updateAuthState();
+      log('Logged out.');
+    });
+
+    /* ------------ sql.js initialization with a global promise ------------ */
+    window.sqlJsReady = (async () => {
+      const SQL = await window.initSqlJs({ locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/${f}` });
+      window.SQL = SQL; // expose globally for convenience
+      log('sql.js ready.');
+      buildBtn.disabled = false;
+      uploadDbBtn.disabled = false;
+      void testPocketBase();
+      void tryRefreshAuth();
+      return SQL;
+    })().catch(e => { console.error(e); log('Failed to initialize sql.js:', e?.message || e); throw e; });
+
+    /* ---------- guess image type from bytes (used for filename/mime) ---------- */
+    function guessImageExt(bytes = new Uint8Array()) {
+      if (bytes.length >= 4) {
+        if (bytes[0]===0x89 && bytes[1]===0x50 && bytes[2]===0x4E && bytes[3]===0x47) return {ext:'png', mime:'image/png'};
+        if (bytes[0]===0xFF && bytes[1]===0xD8) return {ext:'jpg', mime:'image/jpeg'};
+        if (bytes[0]===0x47 && bytes[1]===0x49 && bytes[2]===0x46) return {ext:'gif', mime:'image/gif'};
+        if (bytes[0]===0x42 && bytes[1]===0x4D) return {ext:'bmp', mime:'image/bmp'};
+        if (bytes[0]===0x52 && bytes[1]===0x49 && bytes[2]===0x46 && bytes[3]===0x46) return {ext:'webp', mime:'image/webp'};
+      }
+      return {ext:'bin', mime:'application/octet-stream'};
+    }
+
+    /* ---------- Build & Download demo DB (waits for sql.js) ---------- */
+    buildBtn.addEventListener('click', async () => {
+      try {
+        const SQL = await window.sqlJsReady; // ensures readiness
+        const db = new SQL.Database();
+        db.run(`CREATE TABLE IF NOT EXISTS Test (id INTEGER PRIMARY KEY, R TEXT, P BLOB, T TEXT);`);
+
+        // Demo image (CORS-enabled)
+        const resp = await fetch('https://upload.wikimedia.org/wikipedia/commons/a/a3/June_odd-eyed-cat.jpg');
+        const bytes = new Uint8Array(await resp.arrayBuffer());
+
+        const stmt = db.prepare('INSERT INTO Test (id, R, P, T) VALUES (?, ?, ?, ?)');
+        stmt.run([1, 'z1c6649jj2yl9bw', bytes, 'TTTT']);
+        stmt.free();
+        log('Inserted 1 row into Test.');
+
+        const bin = db.export();
+        const blob = new Blob([bin], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = Object.assign(document.createElement('a'), { href:url, download:'test.sqlite.db' });
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        log('Downloaded test.sqlite.db');
+      } catch (e) {
+        console.error(e); log('Build error:', e?.message || e); alert(e?.message || e);
+      }
+    });
+
+    /* ---------- PB upsert helper (probe filter; fallback to create) ---------- */
+    async function upsertTestDbRowToPB(row) {
+      if (!pb?.authStore?.isValid) throw new Error('Login to PocketBase first.');
+      const coll = (targetCollectionEl?.value || 'TEST_DB').trim();
+      const fileField = (fileFieldEl?.value || 'P').trim();
+
+      // Build file
+      const bytes = row.P instanceof Uint8Array ? row.P : new Uint8Array(row.P || []);
+      const { ext = 'bin', mime = 'application/octet-stream' } = (guessImageExt(bytes) || {});
+      const file = new File([bytes], `row_${row.id ?? 'noid'}_${Date.now()}.${ext}`, { type: mime });
+
+      const form = new FormData();
+      form.append('R', row.R ?? '');
+      form.append('T', row.T ?? '');
+      form.append(fileField, file);
+
+      // Upsert by ext_id if possible
+      const extId = row?.id;
+      if (extId == null) throw new Error('Row has no id to map to ext_id.');
+
+      let existing = null;
+      let extIdSupported = true;
+
+      const sanitizeStr = s => String(s).replace(/"/g, '\\"');
+
+      const tryFilter = async (filter) => {
+        try {
+          return await pb.collection(coll).getFirstListItem(filter);
+        } catch (e) {
+          if (e?.status === 404) return null;        // not found is fine
+          if (e?.status === 400) {                   // invalid filter => ext_id likely missing/wrong type
+            extIdSupported = false; return null;
+          }
+          throw e; // network/auth errors bubble up
+        }
+      };
+
+      // Try text filter first, then numeric
+      existing = await tryFilter(`ext_id="${sanitizeStr(extId)}"`);
+      if (!existing && extIdSupported) existing = await tryFilter(`ext_id=${Number(extId)}`);
+
+      if (existing) {
+        await pb.collection(coll).update(existing.id, form);
+        return { mode: 'update', id: existing.id };
+      } else {
+        if (extIdSupported) form.append('ext_id', String(extId)); // only send if field exists
+        const created = await pb.collection(coll).create(form);
+        if (!extIdSupported) console.warn(`[${coll}] ext_id not supported — created without ext_id`);
+        return { mode: 'create', id: created?.id, extIdSupported };
+      }
+    }
+
+    /* ---------- Upload .db → PocketBase (waits for sql.js) ---------- */
+    uploadDbBtn.addEventListener('click', () => dbFileInput.click());
+
+    dbFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!pb.authStore.isValid) { alert('Please login to PocketBase first.'); dbFileInput.value=''; return; }
+
+      uploadDbBtn.disabled = true;
+      const original = uploadDbBtn.textContent;
+      uploadDbBtn.textContent = 'Uploading…';
+      try {
+        const SQL = await window.sqlJsReady; // ensures readiness
+        const buf = new Uint8Array(await file.arrayBuffer());
+        const db = new SQL.Database(buf);
+
+        // Verify schema exists
+        const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='Test'");
+        if (!tables.length) throw new Error("No table named 'Test' in this DB.");
+
+        const res = db.exec('SELECT id, R, P, T FROM Test');
+        if (!res.length) throw new Error("No rows in table 'Test'.");
+
+        const rows = res[0].values; // [[id,R,P,T], ...]
+        let ok = 0, fail = 0;
+        for (const [id, R, P, T] of rows) {
+          try {
+            await upsertTestDbRowToPB({ id, R, P, T });
+            ok++;
+          } catch (err) {
+            console.error('Upsert failed for id', id, err);
+            log('Upsert failed for id', id, '-', formatPbError(err));
+            fail++;
+          }
+        }
+        log(`Upload complete. Success: ${ok} | Failed: ${fail}`);
+        alert(`Upload complete. Success: ${ok} | Failed: ${fail}`);
+      } catch (e) {
+        console.error(e); log('Upload error:', formatPbError(e)); alert(formatPbError(e));
+      } finally {
+        uploadDbBtn.disabled = false;
+        uploadDbBtn.textContent = original;
+        dbFileInput.value = '';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Details - LabTronic MO System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://mo.lab-tronic.com/logo.ico">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- PushAlert -->
+    <script type="text/javascript">
+        (function(d, t) {
+            var g = d.createElement(t),
+            s = d.getElementsByTagName(t)[0];
+            g.src = "https://cdn.pushalert.co/integrate_8adf8eea3e77a71a801a8986cf581ce8.js";
+            s.parentNode.insertBefore(g, s);
+        }(document, "script"));
+    </script>
+    <!-- End PushAlert -->
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-section">
+                    <a href="dashboard.html" style="text-decoration: none; display: block;">
+                        <img src="https://mo.lab-tronic.com/logo.png" alt="Logo" class="logo">
+                    </a>
+                </div>
+                <div class="user-details-section">
+                    <div class="user-info">
+                        <h3 id="userName">Loading...</h3>
+                        <p id="userRole">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>📊</span>
+                    Dashboard
+                </a>
+                <a href="Projects.html" class="nav-item active" data-access="view_all">
+                    <span>📁</span>
+                    Projects
+                </a>
+                <a href="Man_Order.html" class="nav-item" data-access="view_all">
+                    <span>🏭</span>
+                    Manufacturing Orders
+                </a>
+                <a href="Add_MO.html" class="nav-item" data-access="add_mo">
+                    <span>➕</span>
+                    Add MO
+                </a>
+                <a href="Add_Proj.html" class="nav-item" data-access="add_project">
+                    <span>🆕</span>
+                    Add Project
+                </a>
+                <a href="Notifications.html" class="nav-item">
+                    <span>🔔</span>
+                    Notifications
+                    <span id="notification-badge" class="badge-count" style="display: none;"></span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="Account.html" class="nav-item">
+                    <span>👤</span>
+                    Account
+                </a>
+                <button onclick="logout()" class="nav-item" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;">
+                    <span>🚪</span>
+                    Logout
+                </button>
+            </div>
+            
+            <!-- Mobile Toggle Button -->
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                ✕
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <button class="mobile-toggle" onclick="toggleSidebar()">
+                    ☰
+                </button>
+                <div class="header-content">
+                    <div class="flex items-center gap-3">
+                        <a href="Projects.html" class="btn btn-secondary">← Projects</a>
+                        <h1 class="page-title" id="projectTitle">Project Details</h1>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="projectStatus" class="badge badge-primary">Loading...</span>
+                    <button class="btn btn-primary" onclick="addNewMO()" data-access="add_mo">Add MO</button>
+                </div>
+            </header>
+
+            <div class="content">
+                <!-- Project Information Section -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <h2 class="card-title">Project Information</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm text-muted-foreground">Project Name</label>
+                                <p class="font-semibold" id="projectName">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">Project Code</label>
+                                <p class="font-semibold" id="projectCode">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">University</label>
+                                <p class="font-semibold" id="university">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">Lab</label>
+                                <p class="font-semibold" id="lab">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">Project Manager</label>
+                                <p class="font-semibold" id="projectManager">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">Design Engineer</label>
+                                <p class="font-semibold" id="designEngineer">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">Production Engineer</label>
+                                <p class="font-semibold" id="productionEngineer">Loading...</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-muted-foreground">Created Date</label>
+                                <p class="font-semibold" id="createdDate">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manufacturing Orders Section -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <div class="flex items-center justify-between">
+                            <h2 class="card-title">Manufacturing Orders</h2>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-muted-foreground">Total: <span id="moCount">0</span> MOs</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="table-container">
+                            <!-- Desktop Table View -->
+                            <table class="table" id="moTable" style="display: none;">
+                                <thead>
+                                    <tr>
+                                        <th>MO Name</th>
+                                        <th>MO Type</th>
+                                        <th>MO Date</th>
+                                        <th>Status</th>
+                                        <th>Progress</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="moTableBody">
+                                    <!-- MOs will be loaded here -->
+                                </tbody>
+                            </table>
+                            
+                            <!-- Mobile Cards View -->
+                            <div id="moCardsContainer" style="display: none;">
+                                <!-- MO cards will be loaded here -->
+                            </div>
+                        </div>
+                        
+                        <div id="noMOs" class="text-center p-6" style="display: none;">
+                            <div class="text-2xl mb-2">🏭</div>
+                            <p class="text-muted-foreground mb-4">No manufacturing orders found for this project.</p>
+                            <button class="btn btn-primary" onclick="addNewMO()" data-access="add_mo">Create First MO</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center p-6">
+                    <div class="text-2xl mb-2">⏳</div>
+                    <p>Loading project details...</p>
+                </div>
+
+                <!-- Error State -->
+                <div id="errorState" class="text-center p-6" style="display: none;">
+                    <div class="text-2xl mb-2">❌</div>
+                    <h3 class="text-lg font-semibold mb-2">Error Loading Project</h3>
+                    <p class="text-muted-foreground mb-4" id="errorMessage">Failed to load project details.</p>
+                    <a href="Projects.html" class="btn btn-primary">Back to Projects</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/pocketbase@0.21.1/dist/pocketbase.umd.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/proj-card.js"></script>
+    <script>
+  document.addEventListener('auth-ready', function () {
+    updateNavigation(); // use the function from auth.js
+});
+
+    </script>
+</body>
+</html> 

@@ -1,0 +1,522 @@
+{
+  "system_overview": {
+    "name": "MO Cards System",
+    "version": "2.0",
+    "description": "A web-based Manufacturing Orders management system with user authentication, categorized card views, and real-time status tracking",
+    "technology_stack": {
+      "frontend": "Vanilla JavaScript (ES6 modules)",
+      "backend": "PocketBase",
+      "styling": "CSS3 with CSS Variables",
+      "authentication": "PocketBase Auth with Accounts_T collection"
+    }
+  },
+  "file_structure": {
+    "main_file": "Assets/Test.html",
+    "components": {
+      "html_structure": "Complete single-page application with embedded CSS and JavaScript",
+      "css_styles": "Embedded CSS with CSS custom properties for theming",
+      "javascript_modules": "ES6 module with PocketBase integration"
+    }
+  },
+  "database_schema": {
+    "collections": {
+      "Accounts_T": {
+        "description": "User authentication and account management",
+        "fields": {
+          "id": "Primary key (relation ID for Seen field)",
+          "email": "User email (used for login)",
+          "password": "User password (hashed by PocketBase)",
+          "Full_Name": "User's full name",
+          "Account_Name": "Account display name",
+          "Role": "Array of user roles (e.g., ['Design Engineer'])",
+          "Avatar": "Profile image filename",
+          "emailVisibility": "Boolean for email visibility",
+          "verified": "Boolean for account verification status",
+          "created": "Timestamp of account creation",
+          "updated": "Timestamp of last update"
+        },
+        "sample_record": {
+          "collectionId": "pbc_164773236",
+          "collectionName": "Accounts_T",
+          "id": "z1c6649jj2yl9bw",
+          "email": "ahmedabulkher@gmail.com",
+          "emailVisibility": true,
+          "verified": true,
+          "Full_Name": "Ahmed Abulkher",
+          "Account_Name": "ahmed",
+          "Role": ["Design Engineer"],
+          "Avatar": "filename.jpg",
+          "created": "2022-01-01T10:00:00.123Z",
+          "updated": "2022-01-01T10:00:00.123Z"
+        }
+      },
+      "MO_View": {
+        "description": "Main view for Manufacturing Orders (read-only view)",
+        "fields": {
+          "id": "Primary key (matches MO_T.id)",
+          "MO_Name": "Manufacturing Order name/identifier",
+          "Project_Name": "Associated project name",
+          "MO_Status": "Current status (Not Started, Active, Completed)",
+          "MO_Type": "Type of manufacturing order",
+          "Parts_Count": "Number of parts in the order",
+          "Done_Processes": "Number of completed processes",
+          "Total_Processes": "Total number of processes",
+          "Project_Manager": "Project manager user reference",
+          "Design_Engineer": "Design engineer user reference",
+          "Production_Engineer": "Production engineer user reference",
+          "Notes_Status": "Boolean indicating if notes exist",
+          "Files_Total": "Total number of files",
+          "Files_Sent": "Number of files sent",
+          "Files_Sent_Status": "Status of file sending",
+          "Files_Status": "Legacy file status format",
+          "created": "Creation timestamp",
+          "updated": "Last update timestamp"
+        }
+      },
+      "MO_T": {
+        "description": "Detailed Manufacturing Orders table with Seen tracking",
+        "fields": {
+          "id": "Primary key (matches MO_View.id)",
+          "MO_Name": "Manufacturing Order name",
+          "MO_Type": "Type of manufacturing order",
+          "Project": "Project relation reference",
+          "Notes": "Notes content",
+          "Files": "File information",
+          "Files_Status": "File status in legacy format",
+          "Periority": "Priority level (LOW, MEDIUM, HIGH)",
+          "Est_Deadline": "Estimated deadline",
+          "Fin_Deadline": "Final deadline",
+          "Seen": "Array of user IDs who have viewed this MO",
+          "created": "Creation timestamp",
+          "updated": "Last update timestamp"
+        },
+        "sample_record": {
+          "collectionId": "pbc_1171531463",
+          "collectionName": "MO_T",
+          "id": "0n10h8f88lx4n92",
+          "MO_Name": "MO-20-8-2025-A20",
+          "MO_Type": "Production",
+          "Project": "RELATION_RECORD_ID",
+          "Notes": "Special requirements noted",
+          "Files": "filename.jpg",
+          "Files_Status": "[{MO-sd.pdf,True,id,date},{MO-ssd.pdf,False,null,null}]",
+          "Periority": "HIGH",
+          "Est_Deadline": "2022-01-01T10:00:00.123Z",
+          "Fin_Deadline": "2022-01-01T10:00:00.123Z",
+          "Seen": ["z1c6649jj2yl9bw", "another_user_id"],
+          "created": "2022-01-01T10:00:00.123Z",
+          "updated": "2022-01-01T10:00:00.123Z"
+        }
+      }
+    }
+  },
+  "api_endpoints": {
+    "base_url": "https://mo.lab-tronic.com/database",
+    "authentication": {
+      "login": {
+        "method": "POST",
+        "endpoint": "/api/collections/Accounts_T/auth-with-password",
+        "body": {
+          "email": "user@example.com",
+          "password": "userpassword"
+        },
+        "response": {
+          "token": "auth_token",
+          "record": "user_account_object"
+        }
+      },
+      "refresh": {
+        "method": "POST",
+        "endpoint": "/api/collections/Accounts_T/auth-refresh",
+        "headers": {
+          "Authorization": "Bearer auth_token"
+        }
+      },
+      "logout": {
+        "method": "POST",
+        "endpoint": "/api/collections/Accounts_T/auth-logout"
+      }
+    },
+    "data_retrieval": {
+      "mo_view_list": {
+        "method": "GET",
+        "endpoint": "/api/collections/MO_View/records",
+        "parameters": {
+          "page": "1",
+          "perPage": "50",
+          "sort": "-created"
+        }
+      },
+      "mo_t_details": {
+        "method": "GET",
+        "endpoint": "/api/collections/MO_T/records/{id}",
+        "description": "Get individual MO details including Seen field"
+      },
+      "update_seen_status": {
+        "method": "PATCH",
+        "endpoint": "/api/collections/MO_T/records/{id}",
+        "body": {
+          "Seen": ["user_id_1", "user_id_2", "current_user_id"]
+        }
+      }
+    }
+  },
+  "authentication_flow": {
+    "step_1": "User enters email and password in login form",
+    "step_2": "System calls Accounts_T auth-with-password endpoint",
+    "step_3": "On success, user object is stored in currentUser variable",
+    "step_4": "User info is displayed in header with avatar and role",
+    "step_5": "MO data is loaded and displayed in categorized cards",
+    "step_6": "Session persists across page refreshes using PocketBase auth store"
+  },
+  "data_loading_process": {
+    "step_1": "Fetch MO_View records with pagination",
+    "step_2": "For each MO record, fetch corresponding MO_T record",
+    "step_3": "Merge Seen field from MO_T into MO_View record",
+    "step_4": "Categorize records by MO_Status (Not Started, Active, Completed)",
+    "step_5": "Render cards in appropriate category sections",
+    "step_6": "Setup collapsible functionality for categories"
+  },
+  "card_categorization": {
+    "not_started": {
+      "statuses": ["not started", "new", "todo", "pending", "draft"],
+      "theme": "Gray gradient header",
+      "description": "MOs that haven't been started yet"
+    },
+    "active": {
+      "statuses": ["in progress", "active", "working", "ongoing"],
+      "theme": "Blue gradient header",
+      "description": "MOs currently in progress"
+    },
+    "completed": {
+      "statuses": ["done", "completed", "complete", "ok", "finished"],
+      "theme": "Green gradient header",
+      "description": "MOs that have been completed"
+    }
+  },
+  "card_features": {
+    "visual_elements": {
+      "red_dot": {
+        "purpose": "Indicates unseen MOs",
+        "logic": "Shows when current user ID is not in Seen array",
+        "behavior": "Disappears when card is clicked"
+      },
+      "priority_badge": {
+        "values": ["LOW", "MEDIUM", "HIGH"],
+        "colors": {
+          "LOW": "Green (ok class)",
+          "MEDIUM": "Blue (warn class)",
+          "HIGH": "Red (danger class)"
+        },
+        "position": "Next to MO name"
+      },
+      "status_badge": {
+        "purpose": "Shows current MO status",
+        "position": "Right side of card header"
+      },
+      "progress_bar": {
+        "calculation": "(Done_Processes / Total_Processes) * 100",
+        "color": "Green gradient",
+        "position": "Bottom of card"
+      },
+      "file_status_icons": {
+        "all_sent": "Green checkmark with double line",
+        "some_sent": "Blue checkmark with single line",
+        "none_sent": "Hidden (no icon)"
+      },
+      "notes_icon": {
+        "purpose": "Indicates MO has notes",
+        "icon": "Document with corner fold",
+        "color": "Orange"
+      }
+    },
+    "interactive_features": {
+      "click_behavior": {
+        "action_1": "Mark as seen (add user ID to Seen array)",
+        "action_2": "Show detailed view in bottom panel",
+        "action_3": "Remove red dot from card"
+      },
+      "keyboard_support": {
+        "enter_key": "Triggers card click",
+        "space_key": "Triggers card click"
+      }
+    }
+  },
+  "seen_functionality": {
+    "purpose": "Track which users have viewed each MO",
+    "implementation": {
+      "check_seen": "isSeen() function checks if current user ID is in Seen array",
+      "mark_seen": "markAsSeen() function adds user ID to Seen array in MO_T",
+      "update_ui": "Card re-renders to remove red dot after marking as seen"
+    },
+    "data_flow": {
+      "1": "Load MO_View records",
+      "2": "Enrich with Seen field from MO_T",
+      "3": "Check isSeen() for each card",
+      "4": "Show/hide red dot based on seen status",
+      "5": "On click: update Seen array in MO_T",
+      "6": "Re-render card without red dot"
+    }
+  },
+  "search_functionality": {
+    "searchable_fields": [
+      "MO_Name",
+      "Project_Name", 
+      "MO_Status",
+      "MO_Type"
+    ],
+    "implementation": "Real-time filtering as user types in search input",
+    "case_sensitivity": "Case-insensitive search"
+  },
+  "responsive_design": {
+    "breakpoints": {
+      "mobile": "< 640px - 1 column grid",
+      "tablet": "640px - 1024px - 2 column grid", 
+      "desktop": "> 1024px - 3 column grid"
+    },
+    "category_sections": "Always full width with internal grid layout"
+  },
+  "error_handling": {
+    "authentication_errors": "Show error message in login form",
+    "data_loading_errors": "Display error message instead of cards",
+    "seen_update_errors": "Log to console, continue with UI update",
+    "network_errors": "Graceful degradation with error messages"
+  },
+  "performance_optimizations": {
+    "pagination": "Loads data in pages to avoid large requests",
+    "request_delays": "100ms delay every 10 requests to prevent auto-cancellation",
+    "progress_feedback": "Shows loading progress during data enrichment",
+    "efficient_rendering": "Uses DocumentFragment for batch DOM updates"
+  },
+  "usage_instructions": {
+    "setup": {
+      "1": "Ensure PocketBase server is running at https://mo.lab-tronic.com/database",
+      "2": "Create Accounts_T collection with required fields",
+      "3": "Create MO_View and MO_T collections with proper relationships",
+      "4": "Set up proper permissions for read/write access",
+      "5": "Deploy Test.html to web server or open locally"
+    },
+    "user_workflow": {
+      "1": "Open the application in a web browser",
+      "2": "Enter valid email and password from Accounts_T collection",
+      "3": "Click Login to authenticate",
+      "4": "View categorized MO cards (Not Started, Active, Completed)",
+      "5": "Click category headers to expand/collapse sections",
+      "6": "Click individual MO cards to mark as seen and view details",
+      "7": "Use search box to filter MOs by name, project, status, or type",
+      "8": "Click Logout to end session"
+    },
+    "admin_workflow": {
+      "1": "Create user accounts in Accounts_T collection",
+      "2": "Add MO records to MO_T collection",
+      "3": "Ensure MO_View is properly configured as a view",
+      "4": "Monitor Seen field updates for user activity tracking",
+      "5": "Manage user roles and permissions"
+    }
+  },
+  "configuration_options": {
+    "pocketbase_url": "https://mo.lab-tronic.com/database",
+    "pagination_size": 50,
+    "request_delay": 100,
+    "categories": {
+      "not_started": ["not started", "new", "todo", "pending", "draft"],
+      "active": ["in progress", "active", "working", "ongoing"],
+      "completed": ["done", "completed", "complete", "ok", "finished"]
+    },
+    "priority_mapping": {
+      "LOW": "ok",
+      "MEDIUM": "warn", 
+      "HIGH": "danger"
+    }
+  },
+  "troubleshooting": {
+    "common_issues": {
+      "login_fails": "Check email/password in Accounts_T collection",
+      "no_cards_show": "Verify MO_View collection has data and proper permissions",
+      "red_dots_dont_disappear": "Check MO_T collection permissions and Seen field format",
+      "auto_cancellation_errors": "Reduce request frequency or increase delays",
+      "categorization_wrong": "Check MO_Status field values match category definitions"
+    },
+    "debug_information": {
+      "console_logs": "Enable browser dev tools to see detailed logging",
+      "network_tab": "Check API requests and responses",
+      "local_storage": "PocketBase stores auth tokens in browser storage"
+    }
+  },
+  "code_snippets": {
+    "javascript_functions": {
+      "parseMaybeJson": {
+        "description": "Safely parses JSON strings or returns original value",
+        "parameters": ["value - any type to parse"],
+        "returns": "Parsed object/array or original value",
+        "code": "function parseMaybeJson(value){\n  if(typeof value !== 'string') return value;\n  const s = value.trim();\n  if(s === '') return '';\n  if(/^[-+]?\\d+(?:\\.\\d+)?$/.test(s)) return Number(s);\n  if(s.startsWith('{') || s.startsWith('[') || s === 'true' || s === 'false' || s.startsWith('\"')){\n    try{ return JSON.parse(s); }catch{ /* ignore */ }\n  }\n  return value;\n}",
+        "usage": "const parsed = parseMaybeJson(record.Seen); // Handles both string and array"
+      },
+      "toNumber": {
+        "description": "Converts any value to a number safely",
+        "parameters": ["value - any type to convert"],
+        "returns": "Number (0 if conversion fails)",
+        "code": "function toNumber(value){\n  if(value == null) return 0;\n  const v = parseMaybeJson(value);\n  if(typeof v === 'number' && Number.isFinite(v)) return v;\n  if(typeof v === 'string'){\n    if(v.trim() === '') return 0;\n    const n = Number(v);\n    return Number.isFinite(n) ? n : 0;\n  }\n  if(typeof v === 'object'){\n    if(v == null) return 0;\n    if('value' in v && typeof v.value !== 'object') return Number(v.value) || 0;\n    if('count' in v && typeof v.count !== 'object') return Number(v.count) || 0;\n    if(Array.isArray(v)) return v.length;\n  }\n  const n = Number(v);\n  return Number.isFinite(n) ? n : 0;\n}",
+        "usage": "const count = toNumber(record.Parts_Count); // Always returns a number"
+      },
+      "computeProgress": {
+        "description": "Calculates completion percentage for MO",
+        "parameters": ["record - MO record object"],
+        "returns": "Number (0-100)",
+        "code": "function computeProgress(record){\n  const done = toNumber(record?.Done_Processes);\n  const total = Math.max(0,toNumber(record?.Total_Processes));\n  if(total === 0) return 0;\n  const pct = Math.max(0, Math.min(100, Math.round((done/total)*100)));\n  return pct;\n}",
+        "usage": "const progress = computeProgress(moRecord); // Returns 0-100"
+      },
+      "hasNotes": {
+        "description": "Checks if MO has notes",
+        "parameters": ["record - MO record object"],
+        "returns": "Boolean",
+        "code": "function hasNotes(record){\n  const raw = record?.Notes_Status;\n  const v = parseMaybeJson(raw);\n  if(typeof v === 'boolean') return v === true;\n  if(typeof v === 'number') return v > 0;\n  if(typeof v === 'string'){\n    const t = v.trim().toLowerCase();\n    return ['true','1','yes','y','on','has'].includes(t);\n  }\n  if(typeof v === 'object' && v){\n    if('status' in v){\n      const t = String(v.status).trim().toLowerCase();\n      return ['true','1','yes','y','on','has'].includes(t);\n    }\n    return false;\n  }\n  return false;\n}",
+        "usage": "const hasNotes = hasNotes(moRecord); // Returns true/false"
+      },
+      "getSentState": {
+        "description": "Determines file sending status",
+        "parameters": ["record - MO record object"],
+        "returns": "String ('all', 'some', 'none')",
+        "code": "function getSentState(record){\n  const total = toNumber(record?.Files_Total);\n  const sent = toNumber(record?.Files_Sent);\n  if(total > 0){\n    if(sent >= total) return 'all';\n    if(sent > 0) return 'some';\n    return 'none';\n  }\n  const raw = record?.Files_Sent_Status ?? record?.Files_Status ?? record?.files_status ?? record?.sent_status ?? record?.Sent_Status;\n  const s = parseMaybeJson(raw);\n  if(typeof s === 'boolean') return s ? 'all' : 'none';\n  if(typeof s === 'number'){\n    if(s >= 1) return 'all';\n    if(s > 0) return 'some';\n    return 'none';\n  }\n  if(typeof s === 'object' && s){\n    if('sent' in s && 'total' in s){\n      const sentN = toNumber(s.sent);\n      const totalN = toNumber(s.total);\n      if(totalN > 0){\n        if(sentN >= totalN) return 'all';\n        if(sentN > 0) return 'some';\n      }\n      return 'none';\n    }\n    if('status' in s && typeof s.status !== 'object'){\n      const t = String(s.status).toLowerCase();\n      if(['true','1','yes','done','sent','complete','completed','ok','all','100%','full'].includes(t)) return 'all';\n      if(['some','partial','progress','in progress','sending','started','test'].includes(t)) return 'some';\n      return 'none';\n    }\n  }\n  if(typeof s === 'string'){\n    const t = s.trim().toLowerCase();\n    if(['true','1','yes','done','sent','complete','completed','ok','all','100%','full'].includes(t)) return 'all';\n    if(['some','partial','progress','in progress','sending','started','test'].includes(t)) return 'some';\n    return 'none';\n  }\n  return 'none';\n}",
+        "usage": "const sentState = getSentState(moRecord); // Returns 'all', 'some', or 'none'"
+      },
+      "getPriority": {
+        "description": "Extracts priority level from MO record",
+        "parameters": ["record - MO record object"],
+        "returns": "String ('high', 'medium', 'low', '')",
+        "code": "function getPriority(record){\n  const raw = record?.Priority ?? record?.priority ?? record?.Periority ?? record?.periority ?? record?.prio ?? record?.level;\n  const v = parseMaybeJson(raw);\n  if(v == null) return '';\n  if(typeof v === 'number'){\n    if(v >= 3) return 'high';\n    if(v === 2) return 'medium';\n    if(v <= 1) return 'low';\n  }\n  const t = String(v).trim().toLowerCase();\n  if(['high','h','3'].includes(t)) return 'high';\n  if(['medium','med','m','2'].includes(t)) return 'medium';\n  if(['low','l','1'].includes(t)) return 'low';\n  return '';\n}",
+        "usage": "const priority = getPriority(moRecord); // Returns 'high', 'medium', 'low', or ''"
+      },
+      "isSeen": {
+        "description": "Checks if current user has seen the MO",
+        "parameters": ["record - MO record object"],
+        "returns": "Boolean",
+        "code": "function isSeen(record){\n  if(!currentUser || !record?.Seen) return false;\n  const seenArray = parseMaybeJson(record.Seen);\n  if(!Array.isArray(seenArray)) return false;\n  const userId = currentUser.id;\n  const isUserSeen = seenArray.includes(userId);\n  return isUserSeen;\n}",
+        "usage": "const seen = isSeen(moRecord); // Returns true if user has seen this MO"
+      },
+      "categorizeMO": {
+        "description": "Categorizes MO by status",
+        "parameters": ["record - MO record object"],
+        "returns": "String ('not-started', 'active', 'completed')",
+        "code": "function categorizeMO(record) {\n  const status = String(record?.MO_Status || '').toLowerCase();\n  if (['done', 'completed', 'complete', 'ok', 'finished'].includes(status)) {\n    return 'completed';\n  } else if (['not started', 'new', 'todo', 'pending', 'draft'].includes(status)) {\n    return 'not-started';\n  } else {\n    return 'active';\n  }\n}",
+        "usage": "const category = categorizeMO(moRecord); // Returns category name"
+      },
+      "getUserName": {
+        "description": "Extracts user name from user object",
+        "parameters": ["value - user object or string"],
+        "returns": "String (user name)",
+        "code": "function getUserName(value){\n  const v = parseMaybeJson(value);\n  if(v == null) return '';\n  if(typeof v === 'string') return v.trim();\n  if(typeof v === 'object'){\n    const firstLast = [v.firstName, v.lastName].filter(Boolean).join(' ').trim();\n    return (\n      v.username ||\n      v.name ||\n      firstLast ||\n      v.fullName ||\n      v.email ||\n      v.id ||\n      ''\n    );\n  }\n  return String(v);\n}",
+        "usage": "const name = getUserName(record.Project_Manager); // Returns formatted name"
+      },
+      "renderCard": {
+        "description": "Creates HTML card element for MO",
+        "parameters": ["r - MO record object"],
+        "returns": "HTMLElement (card element)",
+        "code": "function renderCard(r){\n  const moName = r?.MO_Name ?? '-';\n  const projectName = r?.Project_Name ?? '-';\n  const moStatus = r?.MO_Status ?? '-';\n  const partsCount = toNumber(r?.Parts_Count);\n  const moType = r?.MO_Type ?? '-';\n  const pct = computeProgress(r);\n  const notes = hasNotes(r);\n  const sentState = getSentState(r);\n  const priority = getPriority(r);\n  const priorityBadgeClass = priority === 'high' ? 'danger' : (priority === 'medium' ? 'warn' : (priority === 'low' ? 'ok' : ''));\n  const seen = isSeen(r);\n  \n  const statusLower = String(moStatus).toLowerCase();\n  const statusBadgeClass = moStatus ? (['done','completed','complete','ok'].includes(statusLower) ? 'ok' : (['hold','pending','blocked','warning','active'].includes(statusLower) ? 'warn' : '')) : '';\n  \n  const card = el(`\n    <div class=\"card\" role=\"button\" tabindex=\"0\" data-mo-id=\"${r?.id || ''}\">\n      <div class=\"row\">\n        <div class=\"mo\">${seen ? '' : '<span class=\"dot\"></span>'}${moName}\n          ${priority ? `\n            <span class=\"badge ${priorityBadgeClass}\" title=\"Priority\" aria-label=\"Priority ${priority.toUpperCase()}\">\n              ${priority.toUpperCase()}\n            </span>\n          ` : ''}\n        </div>\n        <div class=\"icons\" title=\"Flags and status\">\n          ${notes ? `\n            <span class=\"icon icon-note\" title=\"Has notes\" aria-label=\"Has notes\">\n              <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">\n                <path d=\"M7 3h10a2 2 0 0 1 2 2v9.5a2 2 0 0 1-.586 1.414l-3.5 3.5A2 2 0 0 1 13.5 20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z\"></path>\n                <path d=\"M14 20v-4a2 2 0 0 1 2-2h4\"></path>\n              </svg>\n            </span>\n          ` : ''}\n          ${sentState === 'all' ? `\n            <span class=\"icon sent-all\" title=\"All files sent\" aria-label=\"All files sent\">\n              <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\">\n                <path d=\"M6 12l4 4 8-8\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n                <path d=\"M3 14l3 3\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n              </svg>\n            </span>\n          ` : sentState === 'some' ? `\n            <span class=\"icon sent-some\" title=\"Some files sent\" aria-label=\"Some files sent\">\n              <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\">\n                <path d=\"M6 12l4 4 8-8\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n              </svg>\n            </span>\n          ` : `\n            <span class=\"icon sent-none\" aria-hidden=\"true\"></span>\n          `}\n          <span class=\"badge ${statusBadgeClass}\" title=\"MO Status\">${moStatus}</span>\n        </div>\n      </div>\n      <hr class=\"solid\">\n      <div class=\"row\" style=\"gap:8px\">\n        <div class=\"sub\" style=\"flex:1\">${projectName}</div>\n        <div class=\"tag\">${moType}</div>\n      </div>\n      <div class=\"row\" style=\"gap:8px\">\n        <div class=\"sub\" style=\"flex:1\">${(() => {\n          const pm = getUserName(r?.Project_Manager);\n          const de = getUserName(r?.Design_Engineer);\n          const pe = getUserName(r?.Production_Engineer);\n          const parts = [];\n          if(pe) parts.push(` ${pe}`);\n          if(de) parts.push(` ${de}`);\n          if(pm) parts.push(` ${pm}`);\n          return parts.join(' • ');\n        })()}</div>\n        <div class=\"sub\" style=\"display:flex;align-items:center;gap:4px\" title=\"Parts\">\n          ${partsCount} Parts\n          <svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"skyblue\">\n            <rect x=\"6\" y=\"6\" width=\"6\" height=\"6\"></rect>\n            <rect x=\"14\" y=\"6\" width=\"6\" height=\"6\"></rect>\n            <rect x=\"14\" y=\"14\" width=\"6\" height=\"6\"></rect>\n            <rect x=\"6\" y=\"14\" width=\"6\" height=\"6\"></rect>\n          </svg>\n        </div>\n      </div>\n      <div class=\"row\" style=\"gap:8px\">\n        <div class=\"progress\" aria-label=\"Progress ${pct}%\"><div class=\"bar\" style=\"width:${pct}%\"></div></div>\n        <div class=\"sub\" style=\"min-width:40px;text-align:right\">${pct}%</div>\n      </div>\n    </div>\n  `);\n  \n  card.addEventListener('click', async () => {\n    await markAsSeen(r);\n    selectRecord(r);\n  });\n  card.addEventListener('keydown', async (e)=>{ \n    if(e.key==='Enter' || e.key===' ') { \n      e.preventDefault(); \n      await markAsSeen(r);\n      selectRecord(r);\n    } \n  });\n  return card;\n}",
+        "usage": "const cardElement = renderCard(moRecord); // Returns clickable card element"
+      },
+      "markAsSeen": {
+        "description": "Marks MO as seen by current user",
+        "parameters": ["record - MO record object"],
+        "returns": "Promise<void>",
+        "code": "async function markAsSeen(record) {\n  if (!currentUser || !record?.id) return;\n  \n  try {\n    const currentSeen = parseMaybeJson(record.Seen) || [];\n    if (!Array.isArray(currentSeen)) return;\n    \n    const userId = currentUser.id;\n    \n    if (!currentSeen.includes(userId)) {\n      const updatedSeen = [...currentSeen, userId];\n      \n      await pb.collection('MO_T').update(record.id, {\n        Seen: updatedSeen\n      });\n      \n      record.Seen = updatedSeen;\n      \n      const cardElement = document.querySelector(`[data-mo-id=\"${record.id}\"]`);\n      if (cardElement) {\n        const newCard = renderCard(record);\n        cardElement.parentNode.replaceChild(newCard, cardElement);\n      }\n    }\n  } catch (err) {\n    console.error('Failed to mark as seen:', err);\n  }\n}",
+        "usage": "await markAsSeen(moRecord); // Updates seen status and UI"
+      },
+      "login": {
+        "description": "Authenticates user with PocketBase",
+        "parameters": ["email - string", "password - string"],
+        "returns": "Promise<boolean>",
+        "code": "async function login(email, password) {\n  try {\n    const authData = await pb.collection('Accounts_T').authWithPassword(email, password);\n    currentUser = authData.record;\n    showUserInfo();\n    await load();\n    return true;\n  } catch (err) {\n    console.error('Login failed:', err);\n    loginError.textContent = 'Login failed. Please check your credentials.';\n    loginError.hidden = false;\n    return false;\n  }\n}",
+        "usage": "const success = await login('user@example.com', 'password');"
+      },
+      "load": {
+        "description": "Loads and displays MO data",
+        "parameters": [],
+        "returns": "Promise<void>",
+        "code": "async function load(){\n  if (!currentUser) {\n    console.log('User not authenticated, skipping load');\n    return;\n  }\n  \n  try{\n    statusEl.hidden = false;\n    statusEl.className = 'loading';\n    statusEl.textContent = 'Loading records…';\n\n    async function fetchAllPaged(){\n      const attempts = [\n        { perPage: 50, sort: undefined },\n        { perPage: 20, sort: undefined },\n        { perPage: 50, sort: '-created' },\n        { perPage: 50, sort: '-updated' },\n      ];\n      let lastError = null;\n      for(const attempt of attempts){\n        try{\n          const acc = [];\n          let page = 1;\n          while(true){\n            const params = attempt.sort ? { sort: attempt.sort } : {};\n            const list = await pb.collection('MO_View').getList(page, attempt.perPage, params);\n            acc.push(...list.items);\n            if(list.items.length < attempt.perPage) break;\n            page += 1;\n            if(page > 50) break;\n          }\n          return acc;\n        }catch(e){\n          lastError = e;\n        }\n      }\n      if(lastError) throw lastError;\n      return [];\n    }\n\n    const records = await fetchAllPaged();\n    statusEl.textContent = 'Loading seen status...';\n    \n    async function enrichWithSeenData(moViewRecords) {\n      const enrichedRecords = [];\n      let processedCount = 0;\n      \n      for (const record of moViewRecords) {\n        try {\n          const moTRecord = await pb.collection('MO_T').getOne(record.id);\n          if (moTRecord && moTRecord.Seen) {\n            record.Seen = moTRecord.Seen;\n          }\n        } catch (err) {\n          console.log(`Could not fetch Seen data for MO ${record.id}:`, err.message);\n        }\n        enrichedRecords.push(record);\n        \n        processedCount++;\n        if (processedCount % 5 === 0) {\n          statusEl.textContent = `Loading seen status... ${processedCount}/${moViewRecords.length}`;\n        }\n        \n        if (processedCount % 10 === 0) {\n          await new Promise(resolve => setTimeout(resolve, 100));\n        }\n      }\n      \n      return enrichedRecords;\n    }\n    \n    const enrichedRecords = await enrichWithSeenData(records);\n    allRecords = enrichedRecords;\n    render(allRecords);\n  }catch(err){\n    console.error(err);\n    statusEl.hidden = false;\n    statusEl.className = 'error';\n    statusEl.textContent = 'Failed to load records. Please try again.';\n    categoriesContainer.hidden = true;\n  }\n}",
+        "usage": "await load(); // Loads all MO data and displays cards"
+      },
+      "render": {
+        "description": "Renders MO cards in categorized sections",
+        "parameters": ["records - Array of MO record objects"],
+        "returns": "void",
+        "code": "function render(records){\n  document.getElementById('not-started-grid').innerHTML = '';\n  document.getElementById('active-grid').innerHTML = '';\n  document.getElementById('completed-grid').innerHTML = '';\n  \n  if(!records || records.length === 0){\n    categoriesContainer.hidden = true;\n    statusEl.hidden = false;\n    statusEl.className = 'empty';\n    statusEl.textContent = 'No records found.';\n    return;\n  }\n  \n  const categorized = {\n    'not-started': [],\n    'active': [],\n    'completed': []\n  };\n  \n  for(const r of records){\n    const category = categorizeMO(r);\n    categorized[category].push(r);\n  }\n  \n  Object.keys(categorized).forEach(category => {\n    const grid = document.getElementById(`${category}-grid`);\n    const count = document.getElementById(`${category}-count`);\n    \n    count.textContent = categorized[category].length;\n    \n    const frag = document.createDocumentFragment();\n    for(const r of categorized[category]){\n      frag.appendChild(renderCard(r));\n    }\n    grid.appendChild(frag);\n  });\n  \n  statusEl.hidden = true;\n  categoriesContainer.hidden = false;\n  setupCategoryToggles();\n}",
+        "usage": "render(moRecords); // Displays cards in categorized sections"
+      }
+    },
+    "css_styles": {
+      "css_variables": {
+        "description": "CSS custom properties for theming",
+        "code": ":root{\n  --bg:#f5f7fb;\n  --panel:#ffffff;\n  --muted:#6b7280;\n  --text:#111827;\n  --card:#ffffff;\n  --accent:#2563eb;\n  --accent-2:#16a34a;\n  --warning:#b45309;\n  --danger:#dc2626;\n  --ok:#059669;\n  --border:#e5e7eb\n}",
+        "usage": "Override these variables to customize the theme"
+      },
+      "card_styles": {
+        "description": "Main card styling",
+        "code": ".card{\n  background:var(--card);\n  backdrop-filter:saturate(130%) blur(0px);\n  border:1px solid var(--border);\n  border-radius:14px;\n  padding:14px;\n  display:flex;\n  flex-direction:column;\n  gap:10px;\n  box-shadow:0 6px 14px rgba(0,0,0,.06)\n}",
+        "usage": "Applied to all MO card containers"
+      },
+      "badge_styles": {
+        "description": "Priority and status badge styling",
+        "code": ".badge{\n  font-size:11px;\n  border-radius:999px;\n  padding:4px 8px;\n  border:1px solid var(--border);\n  background:#f8fafc\n}\n.badge.ok{\n  color:#065f46;\n  border-color:#a7f3d0;\n  background:#d1fae5\n}\n.badge.warn{\n  color:#2b2928;\n  border-color:#266fc9;\n  background:#bfdbfe\n}\n.badge.danger{\n  color:#7f1d1d;\n  border-color:#fecaca;\n  background:#fee2e2\n}",
+        "usage": "Used for priority (LOW/MEDIUM/HIGH) and status badges"
+      },
+      "category_styles": {
+        "description": "Categorized section styling",
+        "code": ".category-section{\n  margin-bottom:24px;\n  border:1px solid var(--border);\n  border-radius:12px;\n  overflow:hidden;\n  background:var(--card)\n}\n.category-header{\n  display:flex;\n  align-items:center;\n  justify-content:space-between;\n  padding:16px 20px;\n  background:linear-gradient(135deg,#f8fafc,#f1f5f9);\n  cursor:pointer;\n  transition:all 0.2s;\n  border-bottom:1px solid var(--border)\n}\n.category-not-started .category-header{\n  background:linear-gradient(135deg,#f1f5f9,#f8fafc);\n  border-bottom-color:#f59e0b\n}\n.category-active .category-header{\n  background:linear-gradient(135deg,#dbeafe,#bfdbfe);\n  border-bottom-color:#3b82f6\n}\n.category-completed .category-header{\n  background:linear-gradient(135deg,#d1fae5,#a7f3d0);\n  border-bottom-color:#10b981\n}",
+        "usage": "Styles for the three category sections (Not Started, Active, Completed)"
+      },
+      "progress_bar": {
+        "description": "Progress bar styling",
+        "code": ".progress{\n  height:10px;\n  background:#f3f4f6;\n  border:1px solid var(--border);\n  border-radius:999px;\n  overflow:hidden;\n  position:relative;\n  flex:1\n}\n.bar{\n  height:100%;\n  background:linear-gradient(90deg,#22c55e,#16a34a);\n  width:0\n}",
+        "usage": "Shows completion percentage for each MO"
+      },
+      "responsive_grid": {
+        "description": "Responsive grid layout",
+        "code": ".category-grid{\n  display:grid;\n  grid-template-columns:repeat(1,minmax(0,1fr));\n  gap:12px\n}\n@media(min-width:640px){\n  .category-grid{\n    grid-template-columns:repeat(2,minmax(0,1fr))\n  }\n}\n@media(min-width:1024px){\n  .category-grid{\n    grid-template-columns:repeat(3,minmax(0,1fr))\n  }\n}",
+        "usage": "Responsive grid within each category section"
+      }
+    },
+    "html_templates": {
+      "card_template": {
+        "description": "HTML template for MO cards",
+        "code": "<div class=\"card\" role=\"button\" tabindex=\"0\" data-mo-id=\"${r?.id || ''}\">\n  <div class=\"row\">\n    <div class=\"mo\">${seen ? '' : '<span class=\"dot\"></span>'}${moName}\n      ${priority ? `\n        <span class=\"badge ${priorityBadgeClass}\" title=\"Priority\" aria-label=\"Priority ${priority.toUpperCase()}\">\n          ${priority.toUpperCase()}\n        </span>\n      ` : ''}\n    </div>\n    <div class=\"icons\" title=\"Flags and status\">\n      <!-- Notes icon -->\n      <!-- File status icons -->\n      <span class=\"badge ${statusBadgeClass}\" title=\"MO Status\">${moStatus}</span>\n    </div>\n  </div>\n  <hr class=\"solid\">\n  <div class=\"row\" style=\"gap:8px\">\n    <div class=\"sub\" style=\"flex:1\">${projectName}</div>\n    <div class=\"tag\">${moType}</div>\n  </div>\n  <div class=\"row\" style=\"gap:8px\">\n    <div class=\"sub\" style=\"flex:1\">${userNames}</div>\n    <div class=\"sub\" style=\"display:flex;align-items:center;gap:4px\" title=\"Parts\">\n      ${partsCount} Parts\n      <!-- Parts icon -->\n    </div>\n  </div>\n  <div class=\"row\" style=\"gap:8px\">\n    <div class=\"progress\" aria-label=\"Progress ${pct}%\">\n      <div class=\"bar\" style=\"width:${pct}%\"></div>\n    </div>\n    <div class=\"sub\" style=\"min-width:40px;text-align:right\">${pct}%</div>\n  </div>\n</div>",
+        "usage": "Template used in renderCard() function"
+      },
+      "category_template": {
+        "description": "HTML template for category sections",
+        "code": "<div class=\"category-section category-{category}\">\n  <div class=\"category-header\" data-category=\"{category}\">\n    <div class=\"category-title\">\n      <span>{Category Name}</span>\n      <span class=\"category-count\" id=\"{category}-count\">0</span>\n    </div>\n    <div class=\"category-arrow\">▼</div>\n  </div>\n  <div class=\"category-content\">\n    <div class=\"category-grid\" id=\"{category}-grid\"></div>\n  </div>\n</div>",
+        "usage": "Template for Not Started, Active, and Completed sections"
+      }
+    }
+  },
+  "integration_examples": {
+    "basic_usage": {
+      "description": "Basic implementation example",
+      "code": "// Initialize PocketBase\nconst pb = new PocketBase('https://mo.lab-tronic.com/database');\n\n// Login user\nconst success = await login('user@example.com', 'password');\nif (success) {\n  // User is now authenticated and MO data is loaded\n  console.log('Logged in successfully');\n}\n\n// Get current user info\nconsole.log('Current user:', currentUser);\n\n// Get all loaded MO records\nconsole.log('MO records:', allRecords);\n\n// Filter records by search term\nconst filtered = filterRecords(allRecords, 'search term');\n\n// Render filtered records\nrender(filtered);"
+    },
+    "custom_categorization": {
+      "description": "Custom category logic example",
+      "code": "// Override categorizeMO function for custom logic\nfunction customCategorizeMO(record) {\n  const status = String(record?.MO_Status || '').toLowerCase();\n  const priority = getPriority(record);\n  \n  // Custom logic: High priority items always go to 'active'\n  if (priority === 'high') {\n    return 'active';\n  }\n  \n  // Default categorization\n  if (['done', 'completed', 'complete', 'ok', 'finished'].includes(status)) {\n    return 'completed';\n  } else if (['not started', 'new', 'todo', 'pending', 'draft'].includes(status)) {\n    return 'not-started';\n  } else {\n    return 'active';\n  }\n}\n\n// Use custom categorization in render function\n// Replace categorizeMO(r) with customCategorizeMO(r)"
+    },
+    "custom_card_rendering": {
+      "description": "Custom card rendering example",
+      "code": "// Create custom card with additional fields\nfunction renderCustomCard(record) {\n  const baseCard = renderCard(record);\n  \n  // Add custom elements\n  const customInfo = document.createElement('div');\n  customInfo.className = 'custom-info';\n  customInfo.innerHTML = `\n    <div class=\"custom-field\">\n      <strong>Custom Field:</strong> ${record.Custom_Field || 'N/A'}\n    </div>\n  `;\n  \n  baseCard.appendChild(customInfo);\n  return baseCard;\n}\n\n// Use in render function\n// Replace renderCard(r) with renderCustomCard(r)"
+    },
+    "api_integration": {
+      "description": "Direct API usage examples",
+      "code": "// Get MO records directly\nconst moRecords = await pb.collection('MO_View').getList(1, 50);\nconsole.log('MO records:', moRecords.items);\n\n// Get specific MO details\nconst moDetails = await pb.collection('MO_T').getOne('mo_id');\nconsole.log('MO details:', moDetails);\n\n// Update MO seen status\nawait pb.collection('MO_T').update('mo_id', {\n  Seen: ['user1', 'user2', 'current_user']\n});\n\n// Search MOs\nconst searchResults = await pb.collection('MO_View').getList(1, 50, {\n  filter: 'MO_Name ~ \"search_term\"'\n});\nconsole.log('Search results:', searchResults.items);"
+    }
+  },
+  "future_enhancements": {
+    "suggested_features": [
+      "Real-time updates using PocketBase realtime subscriptions",
+      "Bulk operations for marking multiple MOs as seen",
+      "Advanced filtering options (date ranges, priority levels)",
+      "Export functionality for MO data",
+      "User preferences for default category states",
+      "Mobile app version using PocketBase SDK",
+      "Dashboard analytics showing MO statistics",
+      "Email notifications for MO status changes"
+    ]
+  }
+}
