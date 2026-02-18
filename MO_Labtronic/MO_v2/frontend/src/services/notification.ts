@@ -1,5 +1,5 @@
 import type { Notification } from "@/types/notifications";
-import { useApiHandler } from "./apiService";
+import { apiHandle } from "./apiService";
 import { useAuth } from "@/stores/auth";
 
 const BACKEN_API = "http://localhost:3000";
@@ -9,14 +9,13 @@ export async function getVapId() {
 }
 
 export async function getSubscriptionKey(userId:string) {
-  const { apiHandle, isLoading, response } = useApiHandler();
-  await apiHandle(
+  const res = await apiHandle(
     "/api/collections/users_subscriptions/records",
     "GET",
     true,
     `?filter=(user='${userId}')`
   );
-  return response.value;
+  return res
 }
 
 export async function requestNotificationPermission():Promise<boolean>{
@@ -48,12 +47,11 @@ export async function initSubscription(registration:ServiceWorkerRegistration,ke
   return sub
 }
 export async function postSub(user: string, subscription: any) {
-  const { apiHandle, isLoading, response } = useApiHandler();
-  await apiHandle("/users_subscriptions", "POST", true, undefined, {
+  const res = await apiHandle("/users_subscriptions", "POST", true, undefined, {
     subscription,
     user,
   });
-  return( response.value && response.value.success) || false;
+  return( res && res.success) || false;
 }
 
 function urlBase64ToUint8Array(base64: string) {
@@ -72,7 +70,6 @@ export async function sendNotification(
   sender: string,
   receiver: string
 ) {
-  const { apiHandle, isLoading, response } = useApiHandler(BACKEN_API);
   const is_read = false;
   const params = {
     sender,
@@ -84,7 +81,7 @@ export async function sendNotification(
     is_read,
     extera_data,
   };
-  await apiHandle("/notify", "POST", false, undefined, params);
+  const response =await apiHandle("/notify", "POST", false, undefined, params,'data',"object",BACKEN_API);
   return response;
 }
 

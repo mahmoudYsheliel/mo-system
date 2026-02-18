@@ -38,11 +38,7 @@ export class UndoRedo<T> {
     return this.redoStack.length > 0;
   }
   logStatus() {
-    console.log({
-      undoStack: [...this.undoStack],
-      redoStack: [...this.redoStack],
-      currentState: this.currentState,
-    });
+
   }
   copy(state: T | null) {
     return JSON.parse(JSON.stringify(state));

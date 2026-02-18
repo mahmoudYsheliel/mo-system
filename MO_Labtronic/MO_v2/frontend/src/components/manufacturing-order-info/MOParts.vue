@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { compile, computed, ref, watch } from "vue";
 import PartViewer from "./PartViewer.vue";
-import { useApiHandler } from "@/services/apiService";
+import { apiHandle } from "@/services/apiService";
 import PartsFilter from "./PartsFilter.vue";
 import type { ProcessStatus } from "@/types/process";
 import { Button } from "primevue";
@@ -27,38 +27,34 @@ const showSaveRevertBtn = computed(() => {
   return false;
 });
 
-const {
-  response: partsRes,
-  isLoading: partsLoading,
-  apiHandle: partsApi,
-} = useApiHandler();
+const isLoading = ref(true)
 
 const parts = ref<any[]>([]);
 watch(props, () => {
   if (props.MOId) {
-   callPartsApi()
-  }
-});
-function callPartsApi(){
- partsApi(
-      "/api/collections/Parts_T/records",
-      "GET",
-      true,
-      `?filter=(MO_Name='${props.MOId}')`
-    );
-}
-watch(partsRes, () => {
-  if (partsRes.value?.success && partsRes.value.data) {
-    parts.value = partsRes.value.data.items as any[];
-    for (const part of parts.value) {
-      part.P_Color = part.P_Color || "No Color";
-      const _process = getPartProcessObject(part);
-      part.processes = _process;
-      partsInitialStatuses.value[part.id] = JSON.stringify(_process);
-    }
+    callPartsApi()
   }
 });
 
+function callPartsApi() {
+  apiHandle(
+    "/api/collections/Parts_T/records",
+    "GET",
+    true,
+    `?filter=(MO_Name='${props.MOId}')`
+  ).then(partsRes => {
+    if (partsRes.success && partsRes.data) {
+      parts.value = partsRes.data.items as any[];
+      for (const part of parts.value) {
+        part.P_Color = part.P_Color || "No Color";
+        const _process = getPartProcessObject(part);
+        part.processes = _process;
+        partsInitialStatuses.value[part.id] = JSON.stringify(_process);
+      }
+    }
+    isLoading.value = false
+  })
+}
 function markFilterDone() {
   for (const part of parts.value) {
     const mat = selectedMaterial.value?.split("-")[0];
@@ -101,7 +97,6 @@ async function save() {
   const promises = [];
   for (const part of parts.value) {
     const processDBMaped = getPartProcessDBShema(part, part.processes);
-    const { apiHandle } = useApiHandler();
 
     promises.push(
       apiHandle(
@@ -124,8 +119,8 @@ async function save() {
       life: 3000,
     });
   }
-  else{
-     postEvent("add_toast", {
+  else {
+    postEvent("add_toast", {
       severity: "error",
       summary: "Failed",
       detail: "Some Processes new states were not saved successfully",
@@ -168,61 +163,27 @@ const confirmSave = () => {
   <div id="parts-container" v-show="parts.length">
     <h2 id="parts-title">Parts</h2>
     <div id="parts-filter">
-      <PartsFilter
-        @selected-color="(v) => (selectedColor = v)"
-        @selected-material="(v) => (selectedMaterial = v)"
-        @selected-process="(v) => (selectedProcess = v)"
-        @edit-process="
-          (p) => {
-            changeProcessStatus(p);
-          }
-        "
-        @mark-filter-done="markFilterDone()"
-        :parts="parts"
-      />
+      <PartsFilter @selected-color="(v) => (selectedColor = v)" @selected-material="(v) => (selectedMaterial = v)" @selected-process="(v) => (selectedProcess = v)" @edit-process="
+        (p) => {
+          changeProcessStatus(p);
+        }
+      " @mark-filter-done="markFilterDone()" :parts="parts" />
     </div>
-    <div id="parts-wrapper" v-if="!partsLoading">
+    <div id="parts-wrapper" v-if="!isLoading">
       <div v-for="(part, i) in parts">
-        <PartViewer
-          :selected-color="selectedColor"
-          :selected-material="selectedMaterial"
-          :selected-process="selectedProcess"
-          :key="i"
-          :part="part"
-          @new-part-status="
-            (nps) => {
-              part.processes = nps;
-            }
-          "
-        />
+        <PartViewer :selected-color="selectedColor" :selected-material="selectedMaterial" :selected-process="selectedProcess" :key="i" :part="part" @new-part-status="
+          (nps) => {
+            part.processes = nps;
+          }
+        " />
       </div>
     </div>
     <div id="parts-actions">
-      <Button
-        class="btn-revert"
-        title="Revert"
-        icon="pi pi-backward"
-        v-if="showSaveRevertBtn"
-        label="Revert"
-        @click="revert()"
-      />
+      <Button class="btn-revert" title="Revert" icon="pi pi-backward" v-if="showSaveRevertBtn" label="Revert" @click="revert()" />
 
-      <Button
-        class="btn-save"
-        title="Save"
-        icon="pi pi-save"
-        v-if="showSaveRevertBtn"
-        label="Save"
-        @click="confirmSave()"
-      />
+      <Button class="btn-save" title="Save" icon="pi pi-save" v-if="showSaveRevertBtn" label="Save" @click="confirmSave()" />
 
-      <Button
-        class="btn-done"
-        title="Mark all Done"
-        icon="pi pi-check-circle"
-        label="Mark all Done"
-        @click="markDone()"
-      />
+      <Button class="btn-done" title="Mark all Done" icon="pi pi-check-circle" label="Mark all Done" @click="markDone()" />
     </div>
   </div>
 </template>
@@ -248,33 +209,40 @@ const confirmSave = () => {
   flex-wrap: wrap;
   gap: 1rem;
 }
+
 #parts-actions {
   display: flex;
   gap: 1rem;
   margin: 1.5rem;
   justify-content: end;
 }
+
 .btn-revert {
   background-color: #007aff !important;
   border: none !important;
   color: white !important;
 }
+
 .btn-revert:hover {
   background-color: #0060d1 !important;
 }
+
 .btn-save {
   background-color: #10b981 !important;
   border: none !important;
   color: white !important;
 }
+
 .btn-save:hover {
   background-color: #0e9f6e !important;
 }
+
 .btn-done {
   background-color: #0fa36b !important;
   border: none !important;
   color: white !important;
 }
+
 .btn-done:hover {
   background-color: #0c8b5a !important;
 }

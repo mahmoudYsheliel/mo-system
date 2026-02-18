@@ -5,6 +5,7 @@ import { computed, ref } from "vue";
 import type { PartData } from "@/types/part";
 import "primeicons/primeicons.css";
 import { getFileLink } from "@/lib/helperFunctions";
+import Image from 'primevue/image';
 
 function getImage() {
   return (
@@ -99,7 +100,9 @@ function checkVisibility() {
         />
       </div>
     </div>
-    <img class="part-img" :src="getImage()" alt="" />
+    <div class="part-img">
+      <Image :src="getImage()" alt="Image" preview width="100%" height="100%" />
+    </div>
   </div>
 </template>
 
@@ -141,6 +144,8 @@ function checkVisibility() {
   aspect-ratio: 1/1;
   display: block;
   margin-inline: auto;
+  display: flex;
+  justify-content: center;
 }
 .peocess-text {
   margin-block: 0.5rem 0.25rem;

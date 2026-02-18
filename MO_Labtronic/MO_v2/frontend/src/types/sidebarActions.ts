@@ -6,7 +6,7 @@ export type SideBarAction =
   | "Labs"
   | "Projects"
   | "Manufacturing Orders"
-  | "Add Entity"
+  // | "Add Entity"
   | "Notifications"
   | "Log out";
 

@@ -24,9 +24,9 @@ export const MOTypeColors: Record<MOType, string> = {
 };
 
 export const MORepresentativeColors: Partial<Record<UserType, string>> = {
-  DesignEngineer: "#1565C0",
-  ProductionEngineer: "#2E7D32",
-  ProjectManager: "#F9A825",
+  'Design Engineer': "#1565C0",
+  'Production Engineer': "#2E7D32",
+  'Project Manager': "#F9A825",
 };
 
 export const dateColorMap = (isDuePass: boolean): Record<DateType, string> => {
@@ -56,7 +56,7 @@ export const moStatusColorMap: Record<MOSummaryStatus, string> = {
 export const MOStatusColors: Record<PartStatus, string> = {
   "Not Started": moStatusColorMap["Not Started"],
   "In Progress": moStatusColorMap["Active"],
-  Finished: moStatusColorMap["Completed"],
+  'Done': moStatusColorMap["Completed"],
   Rejected: "#C62828",
   Cancelled: "#616161",
 };

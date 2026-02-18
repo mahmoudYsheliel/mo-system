@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { useApiHandler } from '@/services/apiService';
+import { apiHandle } from '@/services/apiService';
 import { onMounted, ref, watch, type PropType } from 'vue';
 import { InputText, Menu } from 'primevue';
 import 'primeicons/primeicons.css'
-import type { Note,FetchedNote } from '@/types/note';
-import { mapFetchedNotestoNotes,mapNotesToFetchedNoted } from '@/lib/mapNote';
+import type { Note, FetchedNote } from '@/types/note';
+import { mapFetchedNotestoNotes, mapNotesToFetchedNoted } from '@/lib/mapNote';
 import { useAuth } from '@/stores/auth';
 import { useRoute } from 'vue-router';
 import { postEvent } from '@/utils/mediator';
@@ -13,7 +13,7 @@ import useUsersNames from '@/stores/usersNames';
 
 const route = useRoute()
 const preparedNotes = ref<Note[]>([])
-const props = defineProps({ fetchedNotes: { type: Array as PropType<FetchedNote[]> } })
+const props = defineProps({ fetchedNotes: { type: Array as PropType<FetchedNote[]> }, tableName: { type: String } })
 const auth = useAuth()
 const noteInput = ref('')
 const userNamesStore = useUsersNames()
@@ -45,7 +45,7 @@ function menuItems(index: number, note: Note | undefined) {
 function showMenu(event: MouseEvent, index: number) {
     menus.value[index]?.toggle(event)
 }
-const { apiHandle: updateNotesAPIHandle } = useApiHandler()
+
 
 
 watch(([props, users]), () => {
@@ -65,7 +65,7 @@ async function sendNote() {
     else {
         fetchedNotes.push(newFetchedNote)
     }
-    await updateNotesAPIHandle(`/api/collections/MO_T/records/${route.params.id}`, 'PATCH', true, undefined, { Notes: JSON.stringify(fetchedNotes) })
+    await apiHandle(`/api/collections/${props.tableName}/records/${route.params.id}`, 'PATCH', true, undefined, { Notes: JSON.stringify(fetchedNotes) })
     editedNoteIndex.value = -1
     noteInput.value = ''
     preparedNotes.value = mapFetchedNotestoNotes(fetchedNotes, users.value, auth.user?.id)
@@ -75,7 +75,7 @@ async function sendNote() {
 async function deleteNote(index: number) {
     preparedNotes.value = preparedNotes.value.filter((_, i) => { return i !== index })
     const notes = mapNotesToFetchedNoted(preparedNotes.value, users.value)
-    await updateNotesAPIHandle(`/api/collections/MO_T/records/${route.params.id}`, 'PATCH', true, undefined, { Notes: JSON.stringify(notes) })
+    await apiHandle(`/api/collections/${props.tableName}/records/${route.params.id}`, 'PATCH', true, undefined, { Notes: JSON.stringify(notes) })
     postEvent('add_toast', {
         severity: 'success',
         summary: 'Message Deleted',
@@ -120,7 +120,7 @@ function editableNoteOpacity(noteIndex: number) {
         </div>
         <div id="mo-note-input-container">
             <InputText ref="noteInputRef" v-model="noteInput" id="mo-input" />
-            <i class="pi pi-send mo-note-send" @click="sendNote()" ></i>
+            <i class="pi pi-send mo-note-send" @click="sendNote()"></i>
         </div>
     </div>
 

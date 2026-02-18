@@ -1,7 +1,7 @@
 export type UserType =
-  | "DesignEngineer"
-  | "ProductionEngineer"
-  | "ProjectManager"
+  | "Design Engineer"
+  | "Production Engineer"
+  | "Project Manager"
   | "Supervisor"
   | "Admin"
   | "Any";

@@ -1,7 +1,7 @@
 export type PartStatus =
   | "Not Started"
   | "In Progress"
-  | "Finished"
+  | "Done"
   | "Rejected"
   | "Cancelled";
 export type PartData =

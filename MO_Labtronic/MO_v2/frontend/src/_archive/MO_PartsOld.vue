@@ -125,7 +125,6 @@ function changeProcessStatus(newStatus: ProcessStatus) {
           @new-part-status="
             (nps) => {
               part.processes = nps;
-              console.log(parts);
             }
           "
         />

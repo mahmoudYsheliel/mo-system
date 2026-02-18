@@ -26,6 +26,31 @@ const routes: Array<RouteRecordRaw & { meta: RouterMetaData }> = [
     meta: { authRequired: false, userType: ["Any"] },
   },
   {
+    path: "/projects",
+    name: "projects",
+    component: () => import("@/views/Projects.vue"),
+    meta: { authRequired: false, userType: ["Any"] },
+  },
+  {
+    path: "/labs",
+    name: "labs",
+    component: () => import("@/views/Labs.vue"),
+    meta: { authRequired: false, userType: ["Any"] },
+  },
+  {
+    path: "/universities",
+    name: "universities",
+    component: () => import("@/views/Universities.vue"),
+    meta: { authRequired: false, userType: ["Any"] },
+  },
+  
+  {
+    path: "/user-profile",
+    name: "user-profile",
+    component: () => import("@/views/UserProfile.vue"),
+    meta: { authRequired: false, userType: ["Any"] },
+  },
+  {
     path: "/manufacturing-order-info/:id",
     name: "manufacturing-order-info",
     component: () => import("@/views/ManufacturingOrderInfo.vue"),
@@ -35,6 +60,24 @@ const routes: Array<RouteRecordRaw & { meta: RouterMetaData }> = [
     path: "/notification",
     name: "notification",
     component: () => import("@/views/Notification.vue"),
+    meta: { authRequired: false, userType: ["Any"] },
+  },
+  {
+    path: "/project-info/:id",
+    name: "project-info",
+    component: () => import("@/views/ProjectInfo.vue"),
+    meta: { authRequired: false, userType: ["Any"] },
+  },
+  {
+    path: "/university-info/:id",
+    name: "university-info",
+    component: () => import("@/views/UniversityInfo.vue"),
+    meta: { authRequired: false, userType: ["Any"] },
+  },
+  {
+    path: "/lab-info/:id",
+    name: "lab-info",
+    component: () => import("@/views/LabInfo.vue"),
     meta: { authRequired: false, userType: ["Any"] },
   },
 ];
@@ -48,7 +91,6 @@ router.beforeEach((to, from, next) => {
   const auth = useAuth();
 
 
-  console.log(to.name === "login" , auth.isAuthenticated)
   if (to.name === "login" && auth.isAuthenticated) {
 
     next({ name: "dashboard" });

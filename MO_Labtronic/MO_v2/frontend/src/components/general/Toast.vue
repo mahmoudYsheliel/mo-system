@@ -8,9 +8,13 @@ import type { ToastNotification } from '@/types/toast';
 
 const toast = useToast()
 
-onMounted(()=>{
-    subscribe('add_toast',(arg:ToastNotification)=>{
-        toast.add(arg)
+onMounted(() => {
+    subscribe('add_toast', (arg: ToastNotification) => {
+        const severity = arg.severity || 'info'
+        const summary = arg.summary || 'Message'
+        const detail = arg.detail || 'Message Details'
+        const life = arg.life || 3000
+        toast.add({severity,summary,detail,life})
     })
 })
 </script>

@@ -4,8 +4,8 @@ import NavigationBar from '@/components/general/NavigationBar.vue';
 import SummaryCard from '@/components/dashboard/SummaryCard.vue';
 import MOCard from '@/components/dashboard/MOCard.vue';
 import { useRouter } from 'vue-router';
-import { onMounted, ref, shallowRef, watch, computed, TransitionGroup } from 'vue';
-import { useApiHandler } from '@/services/apiService';
+import { onMounted, ref, shallowRef, computed, TransitionGroup } from 'vue';
+import { apiHandle } from '@/services/apiService';
 import { type MOSummaryStatus } from '@/types/mo-order';
 import { summaryCardsConf } from '@/constants/summaraCardData';
 
@@ -15,19 +15,17 @@ const router = useRouter()
 const summaryData = shallowRef(summaryCardsConf)
 const MOs = ref<any[]>([])
 const selectedMOStatus = ref<MOSummaryStatus>('Total')
-
-const { response:MOViewResponse, isLoading:isMOViewLoading, apiHandle:MOViewsAPIHandler } = useApiHandler()
+const isMOViewLoading = ref(true)
 onMounted(async () => {
-    await MOViewsAPIHandler('/api/collections/MO_View/records', 'GET')
-})
-watch((MOViewResponse), (newRes) => {
-    if (!(newRes && newRes.success && newRes.data && newRes.data.items))
+    const res = await apiHandle('/api/collections/MO_View/records', 'GET')
+    if (!(res && res.success && res.data && res.data.items))
         return
 
-    MOs.value = newRes.data.items as any[]
+    MOs.value = res.data.items as any[]
     const MOStatusesCounts: Record<MOSummaryStatus, number> = { 'Not Started': 0, 'Active': 0, 'Completed': 0, 'Total': MOs.value.length }
     MOs.value.forEach(MO => { MOStatusesCounts[MO.MO_Status as MOSummaryStatus]++ })
     Object.entries(MOStatusesCounts).forEach(([k, v]) => summaryData.value[k as MOSummaryStatus].count = v)
+    isMOViewLoading.value = false
 })
 const moShowList = computed(() => {
     return MOs.value.filter((mo) => { return (selectedMOStatus.value == 'Total' || selectedMOStatus.value == mo.MO_Status) })
@@ -49,7 +47,6 @@ const moShowList = computed(() => {
                 <Skeleton style="width: 24rem;height: 10rem;" v-if="isMOViewLoading" />
             </div>
             <TransitionGroup class="mo-cards-container" tag="MOCard" name="list">
-
                 <MOCard v-if="!isMOViewLoading" v-for="mo, i in moShowList" :key="i" :MOData="mo" @click="router.push(`/manufacturing-order-info/${mo.id}`)" />
             </TransitionGroup>
         </div>

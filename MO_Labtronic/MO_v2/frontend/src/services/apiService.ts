@@ -12,67 +12,65 @@ export function getPocketBaseURL() {
   return _urlBase;
 }
 
-export function useApiHandler(urlBase=_urlBase) {
-  const response = ref<ReturnMessage | null>(null);
-  const isLoading = ref(true);
+export async function apiHandle(
+  urlPath: string,
+  method: ApiMethod,
+  authRequired: boolean = true,
+  queryParams?: string,
+  postParams?: Object | FormData,
+  resTybe: 'blob' | 'data' = 'data', // typo fix: resType
+  bodyType: 'object' | 'form_data' = 'object',
+  headerContentType: string | null = "application/json",
+  urlBase = _urlBase
+) {
+  try {
+    const headers: Record<string, string> = {};
 
-  async function apiHandle(
-    urlPath: string,
-    method: ApiMethod,
-    authRequired: boolean = true,
-    queryParams?: string,
-    postParams?: Object,
-    resTybe: 'blob' | 'data' = 'data'
-  ) {
-    isLoading.value = true;
-    // await new Promise((resolve)=>{setTimeout(resolve,5000)})
-    try {
-      if (authRequired && !auth.token) {
-        response.value = {
-          success: false,
-          msg: "Invalid credentials",
-          data: null,
-        };
-        return response.value;
-      }
-      const urlFull = queryParams
-        ? `${urlBase}${urlPath}${queryParams}`
-        : `${urlBase}${urlPath}`;
-      const headers = {
-        "Content-Type": "application/json",
-        ...(authRequired && auth.token && { Authorization: auth.token }),
-      };
-      const res = await fetch(urlFull, {
-        method,
-        headers,
-        ...(postParams && { body: JSON.stringify(postParams) }),
-      });
-      if (!res.ok) {
-        console.log(res)
-        response.value = {
-          success: false,
-          msg: res?.statusText,
-          data: null,
-        };
-
-        return response.value;
-      }
-      
-      const data = resTybe==='data' ? await res.json() : await res.blob();
-      response.value = { success: true, msg: "", data };
-      return response.value;
-    } catch (err: unknown) {
-      response.value = {
-        success: false,
-        msg: err instanceof Error ? err.message : String(err),
-        data: null,
-      };
-      return response.value;
-    } finally {
-      isLoading.value = false;
-      return response.value;
+    if (authRequired && auth.token) {
+      headers['Authorization'] = auth.token;
     }
-  }
 
-  return { response, isLoading, apiHandle };
+    if (headerContentType) {
+      headers['Content-Type'] = headerContentType;
+    }
+
+    let body: any = undefined;
+    if (postParams) {
+      if (bodyType === 'object') {
+        body = JSON.stringify(postParams);
+      } else if (bodyType === 'form_data') {
+        body = postParams;
+      }
+    }
+
+    const urlFull = queryParams
+      ? `${urlBase}${urlPath}${queryParams}`
+      : `${urlBase}${urlPath}`;
+
+    // 2. Pass headers unconditionally
+    const res = await fetch(urlFull, {
+      method,
+      headers,
+      body,
+    });
+    
+
+    if (!res.ok) {
+      const data = await res.json()
+      
+      return {
+        success: false,
+        msg: res.statusText,
+        data,
+      };
+    }
+    const data = resTybe === 'data' ? await res.json() : await res.blob();
+    return { success: true, msg: "", data };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      msg: err instanceof Error ? err.message : String(err),
+      data: err,
+    };
+  }
 }

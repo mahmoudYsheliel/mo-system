@@ -8,6 +8,7 @@ import LogOutIcon from "@/icons/LogOutIcon.vue";
 import MOIcon from "@/icons/MOIcon.vue";
 import type { Router } from "vue-router";
 import type { SideBarItem } from "@/types/sidebarActions";
+import { useAuth } from "@/stores/auth";
 
 export function createSideBarmMinItems(router: Router): SideBarItem[] {
   return [
@@ -47,7 +48,7 @@ export function createSideBarmMinItems(router: Router): SideBarItem[] {
         "Supervisor",
       ],
       command: () => {
-        router.push("/");
+        router.push("/projects");
       },
     },
     {
@@ -60,7 +61,7 @@ export function createSideBarmMinItems(router: Router): SideBarItem[] {
         "Supervisor",
       ],
       command: () => {
-        router.push("/");
+        router.push("/labs");
       },
     },
     {
@@ -73,17 +74,17 @@ export function createSideBarmMinItems(router: Router): SideBarItem[] {
         "Supervisor",
       ],
       command: () => {
-        router.push("/");
+        router.push("/universities");
       },
     },
-    {
-      name: "Add Entity",
-      icon: AddIcon,
-      accessedBy: ["DesignEngineer"],
-      command: () => {
-        router.push("/");
-      },
-    },
+    // {
+    //   name: "Add Entity",
+    //   icon: AddIcon,
+    //   accessedBy: ["DesignEngineer"],
+    //   command: () => {
+    //     router.push("/");
+    //   },
+    // },
     {
       name: "Notifications",
       icon: NotificationIcon,
@@ -103,6 +104,7 @@ export function createSideBarmMinItems(router: Router): SideBarItem[] {
 
 
 export function createSideBarActions(router: Router): SideBarItem[] {
+  const auth = useAuth()
   return [
     {
       name: "Log out",
@@ -114,7 +116,7 @@ export function createSideBarActions(router: Router): SideBarItem[] {
         "Supervisor",
       ],
       command: () => {
-        router.push("/");
+        auth.logout()
       },
     },
   ];

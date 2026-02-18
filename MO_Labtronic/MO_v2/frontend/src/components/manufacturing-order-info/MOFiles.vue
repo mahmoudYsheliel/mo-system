@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import FileViewer from "./FileViewer.vue";
 import { useAuth } from "@/stores/auth";
-import { useApiHandler } from "@/services/apiService";
+import { apiHandle } from "@/services/apiService";
 import { useRoute } from "vue-router";
 import {type MOFileStructure } from "@/types/moFile";
 import { Button } from "primevue";
@@ -29,8 +29,7 @@ function updateFileStatus(index: number, isSent: boolean) {
       return `{${od.fileName},${od.isSent},${od.senderName},${od.sentDate}}`;
     })
     .join(",");
-  const { apiHandle: updateFilesApiHandler } = useApiHandler();
-  updateFilesApiHandler(
+    apiHandle(
     `/api/collections/MO_T/records/${route.params.id}`,
     "PATCH",
     true,
@@ -55,8 +54,7 @@ function markAllAsSent() {
       return `{${od.fileName},${od.isSent},${od.senderName},${od.sentDate}}`;
     })
     .join(",");
-  const { apiHandle: updateFilesApiHandler } = useApiHandler();
-  updateFilesApiHandler(
+  apiHandle(
     `/api/collections/MO_T/records/${route.params.id}`,
     "PATCH",
     true,

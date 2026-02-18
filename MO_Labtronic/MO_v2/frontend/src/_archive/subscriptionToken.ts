@@ -39,7 +39,6 @@ export const useSubscriptionToken = defineStore("subscriptionToken", () => {
       const sub = await notif.initSubscription(registration, key);
       return await notif.postSub(userId, sub);
     } catch (error) {
-      console.log(error)
       return false;
     }
   }
