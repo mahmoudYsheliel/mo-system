@@ -1,43 +1,40 @@
 <script lang="ts" setup>
-import { apiHandle } from '@/services/apiService';
-import { onMounted, ref, watch, type PropType } from 'vue';
+import { ref, watch } from 'vue';
 import { InputText, Menu } from 'primevue';
 import 'primeicons/primeicons.css'
-import type { Note, FetchedNote } from '@/types/note';
-import { mapFetchedNotestoNotes, mapNotesToFetchedNoted } from '@/lib/mapNote';
-import { useAuth } from '@/stores/auth';
-import { useRoute } from 'vue-router';
-import { postEvent } from '@/utils/mediator';
-import useUsersNames from '@/stores/usersNames';
+import type { ExpandedNote } from '@/services/apis/mo.service';
+import { deleteNote, updateNote, addNote } from '@/services/apis/note.service';
+import { Toast, useToast } from 'primevue';
+import { getUser } from '@/services/user.service';
+import type { NoteModel } from '@/models/note.model';
+import { getDate, getTime } from '@/lib/helper-functions';
 
 
-const route = useRoute()
-const preparedNotes = ref<Note[]>([])
-const props = defineProps({ fetchedNotes: { type: Array as PropType<FetchedNote[]> }, tableName: { type: String } })
-const auth = useAuth()
+const props = defineProps<{ notes?: ExpandedNote[], moId?: string, projectId?: string }>()
+const emits = defineEmits(['noteSent'])
 const noteInput = ref('')
-const userNamesStore = useUsersNames()
-const users = ref<any[]>([])
-userNamesStore.getUsers().then(res => {
-    users.value = res || []
-})
-const editedNoteIndex = ref(-1)
-const noteInputRef = ref<HTMLInputElement>()
-const menus = ref<any[]>([])
+const toast = useToast()
 
-function menuItems(index: number, note: Note | undefined) {
+const editedNote = ref<NoteModel | undefined>()
+const menus = ref<any[]>([])
+const currentUserId = getUser()?.id
+
+function menuItems(note: ExpandedNote) {
     return [
         {
             label: 'Edit',
             icon: 'pi pi-pencil',
             class: 'edit',
-            command: () => { editedNoteIndex.value = index; noteInput.value = note?.content || '' }
+            command: () => {
+                noteInput.value = note?.note || ''
+                editedNote.value = note
+            }
         },
         {
             label: 'Delete',
             icon: 'pi pi-trash',
             class: 'delete',
-            command: () => { deleteNote(index) }
+            command: () => { if (note.id) delNote(note.id) }
         }
     ]
 }
@@ -46,80 +43,85 @@ function showMenu(event: MouseEvent, index: number) {
     menus.value[index]?.toggle(event)
 }
 
-
-
-watch(([props, users]), () => {
-    preparedNotes.value = mapFetchedNotestoNotes(props.fetchedNotes, users.value, auth.user.id)
-})
-watch(editedNoteIndex, val => {
-    if (val > -1) noteInputRef.value?.focus
-})
-
-async function sendNote() {
-    const d = new Date()
-    const fetchedNotes = mapNotesToFetchedNoted(preparedNotes.value, users.value)
-    const newFetchedNote: FetchedNote = { content: noteInput.value, created: d.toString(), user_id: auth.user.id }
-    if (editedNoteIndex.value !== -1) {
-        fetchedNotes[editedNoteIndex.value] = newFetchedNote
+async function delNote(noteId: string) {
+    const noteRes = await deleteNote(noteId)
+    if (noteRes.success) {
+        toast.add({
+            severity: 'success',
+            summary: 'Message Deleted',
+            detail: 'Your message has been deleted successfully',
+            life: 3000
+        })
+        emits('noteSent')
     }
     else {
-        fetchedNotes.push(newFetchedNote)
+        toast.add({
+            severity: 'error',
+            summary: 'Message Deleted Failed',
+            detail: 'Failed to delete the message',
+            life: 3000
+        })
     }
-    await apiHandle(`/api/collections/${props.tableName}/records/${route.params.id}`, 'PATCH', true, undefined, { Notes: JSON.stringify(fetchedNotes) })
-    editedNoteIndex.value = -1
-    noteInput.value = ''
-    preparedNotes.value = mapFetchedNotestoNotes(fetchedNotes, users.value, auth.user?.id)
+
 }
-
-
-async function deleteNote(index: number) {
-    preparedNotes.value = preparedNotes.value.filter((_, i) => { return i !== index })
-    const notes = mapNotesToFetchedNoted(preparedNotes.value, users.value)
-    await apiHandle(`/api/collections/${props.tableName}/records/${route.params.id}`, 'PATCH', true, undefined, { Notes: JSON.stringify(notes) })
-    postEvent('add_toast', {
-        severity: 'success',
-        summary: 'Message Deleted',
-        detail: 'Your message has been deleted successfully',
-        life: 3000
-    })
-}
-
-
-function editableNoteOpacity(noteIndex: number) {
-    if (editedNoteIndex.value !== noteIndex && editedNoteIndex.value !== -1)
+function editableNoteOpacity(note: NoteModel) {
+    if (editedNote.value?.id === note.id)
         return 0.5
     return 1
 }
 
+function sendNote() {
+    if (editedNote.value?.id)
+        updateNote(editedNote.value?.id, { note: noteInput.value });
+    else {
+        const note: NoteModel = {
+            note: noteInput.value,
+            userId:currentUserId,
+            projectId: props.projectId,
+            moId: props.moId
+        }
+        addNote(note)
+    }
+    emits('noteSent', noteInput.value)
+    noteInput.value = ''
+    editedNote.value = undefined
+}
 
+function getNoteClass(note: NoteModel) {
+    return note.userId === currentUserId ? 'note-first-user' : 'note-second-user'
+}
 
 </script>
 
 
 <template>
+    <Toast />
     <div id="mo-notes-container">
         <h2 id="mo-notes-title">Notes</h2>
         <div id="mo-notes-wrapper">
-
-            <div class="mo-note" v-for="note, i in preparedNotes" :class="note.noteClass" :style="{ opacity: editableNoteOpacity(i) }">
+            <div class="mo-note" v-for="note, i in notes" :class="getNoteClass(note)"
+                :style="{ opacity: editableNoteOpacity(note) }">
                 <div class="note-sender-date">
-                    <p class="note-sender"> {{ note.sender }}</p>
-                    <i @click="showMenu($event, i)" style="cursor: pointer;" class="pi pi-angle-down"></i>
-                    <Menu :model="menuItems(i, note)" popup ref="menus">
+                    <p class="note-sender"> {{ note.expand?.userId?.userName }}</p>
+                    <i @click="showMenu($event, i)" style="cursor: pointer;" class="pi pi-angle-down" v-if="currentUserId==note.userId"></i>
+                    <Menu :model="menuItems(note)" popup ref="menus">
                         <template #item="{ item }">
-                            <div :class="item.class" style="display: flex; gap: 0.5rem;padding: 0.25rem 0.5rem;cursor: pointer;">
+                            <div :class="item.class"
+                                style="display: flex; gap: 0.5rem;padding: 0.25rem 0.5rem;cursor: pointer;">
                                 <i :class="item.icon"></i>
                                 <p>{{ item.label }}</p>
                             </div>
                         </template>
                     </Menu>
                 </div>
-                <p class="note-content">{{ note.content }}</p>
-                <p class="note-time"> {{ note.date }} , {{ note.time }}</p>
+                <p class="note-content">{{ note.note }}</p>
+                <p class="note-time" v-if="note.created"> {{ getDate(new Date(note.created)) }} , {{ getTime(new
+                    Date(note.created)) }}
+                </p>
             </div>
         </div>
         <div id="mo-note-input-container">
-            <InputText ref="noteInputRef" v-model="noteInput" id="mo-input" />
+            <InputText v-model="noteInput" id="mo-input" />
             <i class="pi pi-send mo-note-send" @click="sendNote()"></i>
         </div>
     </div>
@@ -225,7 +227,7 @@ function editableNoteOpacity(noteIndex: number) {
     position: relative;
     font-weight: lighter;
     font-size: 1.25rem;
-    color: var(--color-primary);
+    color: #122e7c;
     cursor: pointer;
 }
 

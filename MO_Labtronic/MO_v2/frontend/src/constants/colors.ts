@@ -24,9 +24,9 @@ export const MOTypeColors: Record<MOType, string> = {
 };
 
 export const MORepresentativeColors: Partial<Record<UserType, string>> = {
-  'Design Engineer': "#1565C0",
-  'Production Engineer': "#2E7D32",
-  'Project Manager': "#F9A825",
+  "Design Engineer": "#1565C0",
+  "Production Engineer": "#2E7D32",
+  "Project Manager": "#F9A825",
 };
 
 export const dateColorMap = (isDuePass: boolean): Record<DateType, string> => {
@@ -56,7 +56,7 @@ export const moStatusColorMap: Record<MOSummaryStatus, string> = {
 export const MOStatusColors: Record<PartStatus, string> = {
   "Not Started": moStatusColorMap["Not Started"],
   "In Progress": moStatusColorMap["Active"],
-  'Done': moStatusColorMap["Completed"],
+  Done: moStatusColorMap["Completed"],
   Rejected: "#C62828",
   Cancelled: "#616161",
 };
@@ -66,31 +66,35 @@ export const notificationColors: Record<
   { color: string; icon: string }
 > = {
   mo_created: {
-    color: "#22c55e",      // green-500
+    color: "#22c55e", // green-500
     icon: "pi pi-flag",
   },
   mo_edited: {
-    color: "#F59E0B",      // Light Orange
+    color: "#F59E0B", // Light Orange
     icon: "pi pi-pencil",
   },
   mo_completed: {
-    color: "#e4b8c6",      // teal-500 
+    color: "#e4b8c6", // teal-500
     icon: "pi pi-check",
   },
   mo_note: {
-    color: "#7e22ce",      // purple-700
+    color: "#7e22ce", // purple-700
     icon: "pi pi-clipboard",
   },
   process_rejected: {
-    color: "#ef4444",      // red-500
+    color: "#ef4444", // red-500
     icon: "pi pi-times",
   },
 };
 
-export function getNotificationColor(notificationType: string,isRead:boolean) {
-  if (isRead) return '#2c2c2c'
-  return notificationColors[notificationType as Notification].color;
+export function getNotificationColor(
+  notificationType?: Notification,
+  isRead?: boolean,
+) {
+  if (isRead || !notificationType) return "#2c2c2c";
+  return notificationColors[notificationType].color;
 }
-export function getNotificationIcon(notificationType: string) {
-  return notificationColors[notificationType as Notification].icon;
+export function getNotificationIcon(notificationType?: Notification) {
+  if (!notificationType) return undefined;
+  return notificationColors[notificationType].icon;
 }

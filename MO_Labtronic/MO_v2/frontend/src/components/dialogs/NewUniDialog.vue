@@ -2,37 +2,40 @@
 import { Dialog } from 'primevue';
 import { ref, nextTick, watch } from 'vue';
 import Button from 'primevue/button';
-import { apiHandle } from '@/services/apiService';
-import { postEvent } from '@/utils/mediator';
+import { createUniversity } from '@/services/apis/university.service';
 import InputText from 'primevue/inputtext';
+import { Toast, useToast } from 'primevue';
 
 const visible = defineModel<boolean>('visible')
 const uniName = ref('')
-
+const toast = useToast()
 
 async function addUni(){
     if(uniName.value.length < 3){
-        postEvent('add_toast',{
+        toast.add({
             severity:'error',
             summary:'Name Error',
-            detail:'Universiy name must contain at least 3 characters'
+            detail:'University name must contain at least 3 characters',
+            life:3000
         })
         return 
     }
-    const res = await apiHandle('/api/collections/Uni_T/records','POST',true,'',{Uni_Name:uniName.value})
+    const res = await createUniversity({name:uniName.value})
     if (res.success){
-        postEvent('add_toast',{
+        toast.add({
             severity:'success',
-            summary:'Universiy Added',
-            detail:'New Universiy was added successfully'
+            summary:'University Added',
+            detail:'New University was added successfully',
+            life:3000
         })
         visible.value = false
     }
     else{
-        postEvent('add_toast',{
+        toast.add({
             severity:'error',
             summary:'Error',
-            detail:'There was error during university creation'
+            detail:'There was error during university creation',
+            life:3000
         })
     }
 }
@@ -40,6 +43,7 @@ async function addUni(){
 
 
 <template>
+    <Toast />
     <Dialog v-model:visible="visible" modal header="Add New University">
         <div class="add-uni-container">
             <InputText v-model="uniName" placeholder="University Name" />

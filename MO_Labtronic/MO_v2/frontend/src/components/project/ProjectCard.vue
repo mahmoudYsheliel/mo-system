@@ -1,25 +1,25 @@
 <script setup lang="ts">
 import ProductionEngineerIcon from '@/icons/ProductionEngineerIcon.vue';
 import ProjectManagerIcon from '@/icons/ProjectManagerIcon.vue';
-import DesignEnginerIcon from '@/icons/DesignEnginerIcon.vue';
+import DesignEngineerIcon from '@/icons/DesignEngineerIcon.vue';
 import LabIcon from '@/icons/LabIcon.vue';
 import UniversityIcon from '@/icons/UniversityIcon.vue';
 import { priorityColor } from '@/constants/colors';
 import { useRouter } from 'vue-router';
-import type { Priority } from '@/types/mo-order'
+import type { DeepExpandedProject } from '@/services/apis/project.service';
 
 const router = useRouter()
-const props = defineProps(['projectData'])
+const props = defineProps<{projectData?:DeepExpandedProject}>()
 </script>
 
 <template>
     <div class="project-card-container" @click="router.push(`/project-info/${projectData?.id}`)">
         <div class="project-card-header">
             <div class="project-card-left-header">
-                <p class="project-card-title">{{ projectData.Project_Name }}</p>
+                <p class="project-card-title">{{ projectData?.name }}</p>
             </div>
             <div class="project-card-right-header">
-                <p class="project-card-code">({{ projectData.Project_Code }})</p>
+                <p class="project-card-code">({{ projectData?.code }})</p>
 
             </div>
         </div>
@@ -27,36 +27,36 @@ const props = defineProps(['projectData'])
         <div class="project-card-main">
 
 
-            <div class="project-card-engs">
-                <div class="projeject-card-element-container">
+            <div class="project-card-eng">
+                <div class="project-card-element-container">
                     <ProjectManagerIcon class="element-icon" />
-                    <p>{{ projectData.Project_Manager }}</p>
+                    <p>{{ projectData?.expand?.projectManagerId?.userName }}</p>
                 </div>
-                <div class="projeject-card-element-container">
-                    <DesignEnginerIcon class="element-icon" />
-                    <p>{{ projectData.Design_Engineer }}</p>
+                <div class="project-card-element-container">
+                    <DesignEngineerIcon class="element-icon" />
+                    <p>{{ projectData?.expand?.designEngineersId?.[0]?.userName }}</p>
                 </div>
-                <div class="projeject-card-element-container">
+                <div class="project-card-element-container">
                     <ProductionEngineerIcon class="element-icon" />
-                    <p>{{ projectData.Production_Engineer }}</p>
+                    <p>{{ projectData?.expand?.productionEngineersId?.[0]?.userName }}</p>
                 </div>
 
             </div>
             <div class="project-card-main-separator"></div>
             <div class="project-card-uni-lab">
-                <p class="project-card-priority projeject-card-element-container" v-if="(projectData.Periority as Priority)" :style="{ backgroundColor: priorityColor[projectData.Periority as Priority] }">{{ projectData.Periority }}</p>
-                <div class="projeject-card-element-container">
+                <p class="project-card-priority project-card-element-container" v-if="projectData?.priority" :style="{ backgroundColor: priorityColor[projectData.priority] }">{{ projectData.priority }}</p>
+                <div class="project-card-element-container">
                     <UniversityIcon class="element-icon" />
-                    <p>{{ projectData.University_Name }} </p>
+                    <p>{{ projectData?.expand?.universityId?.name }} </p>
                 </div>
-                <div class="projeject-card-element-container">
+                <div class="project-card-element-container">
                     <LabIcon class="element-icon" />
-                    <p>{{ projectData.Lab_Name }} </p>
+                    <p>{{ projectData?.expand?.labId?.name  }} </p>
                 </div>
             </div>
         </div>
         <div>
-            <p style="font-weight: 600;margin-bottom: 0.25rem;">MOs Count: {{ projectData.MOs_Count }}</p>
+            <p style="font-weight: 600;margin-bottom: 0.25rem;">MOs Count: {{ projectData?.expand?.mos_via_projectId?.length || 0 }}</p>
         
         </div>
 
@@ -88,7 +88,7 @@ const props = defineProps(['projectData'])
     align-items: center;
     justify-content: space-between;
     padding-bottom: 1rem;
-    border-bottom: 2px var(--color-secondary) solid;
+    border-bottom: 2px #ebebeb solid;
 }
 
 .project-card-left-header,
@@ -125,18 +125,18 @@ const props = defineProps(['projectData'])
 .project-card-main-separator {
     width: 4px;
     border-radius: 1rem;
-    background-color: var(--color-muted-foreground);
+    background-color: #757575;
     margin-inline: 0.5rem;
 }
 
-.project-card-engs,
+.project-card-eng,
 .project-card-uni-lab {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
-.projeject-card-element-container {
+.project-card-element-container {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -145,7 +145,7 @@ const props = defineProps(['projectData'])
 
 .element-icon {
     width: 1.125rem;
-    fill: var(--color-muted-foreground);
+    fill: #757575;
 }
 
 .project-card-mos-container {

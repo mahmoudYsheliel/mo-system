@@ -1,32 +1,25 @@
 <script setup lang="ts">
 import SideBar from '@/components/general/SideBar.vue';
 import NavigationBar from '@/components/general/NavigationBar.vue';
-import { useRouter } from 'vue-router';
-import { onMounted, ref, watch, computed, TransitionGroup } from 'vue';
-import { apiHandle } from '@/services/apiService';
+import { onMounted, ref, computed, TransitionGroup } from 'vue';
 import ProjectCard from '@/components/project/ProjectCard.vue';
 import { InputText } from 'primevue';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import { Searcher } from 'fast-fuzzy';
 import Button from 'primevue/button';
-import { syncDB } from '@/services/sqlService';
-import useUsersNames from '@/stores/usersNames';
+import { syncDB } from '@/services/sql.service';
 import NewProjectDialog from '@/components/dialogs/NewProjectDialog.vue';
+import { getExpandedProjects, type DeepExpandedProject } from '@/services/apis/project.service';
 
-const usersNames = useUsersNames()
-const router = useRouter()
-const projects = ref<any[]>([])
+const projects = ref<DeepExpandedProject[]>([])
 const showDialog = ref(false)
 
 
 onMounted(async () => {
-    const projectsRes =await apiHandle('/api/collections/Project_View/records', 'GET')
-
-
-    if (!(projectsRes && projectsRes.success))
-        return
-    projects.value = projectsRes.data.items as any[]
+    const projectsRes = await getExpandedProjects()
+    if (!projectsRes.data?.items) return
+    projects.value = projectsRes.data.items
 
 })
 const search = ref('')

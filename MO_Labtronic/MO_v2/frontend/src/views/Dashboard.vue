@@ -4,32 +4,39 @@ import NavigationBar from '@/components/general/NavigationBar.vue';
 import SummaryCard from '@/components/dashboard/SummaryCard.vue';
 import MOCard from '@/components/dashboard/MOCard.vue';
 import { useRouter } from 'vue-router';
-import { onMounted, ref, shallowRef, computed, TransitionGroup } from 'vue';
-import { apiHandle } from '@/services/apiService';
+import { onMounted, ref, shallowRef, TransitionGroup } from 'vue';
 import { type MOSummaryStatus } from '@/types/mo-order';
-import { summaryCardsConf } from '@/constants/summaraCardData';
-
+import { summaryCardsConf } from '@/lib/build-summary-card-data';
+import { getMOs } from '@/services/apis/mo.service';
 import { Skeleton } from 'primevue';
+import type { DeepExpandedMO } from '@/services/apis/mo.service';
 
 const router = useRouter()
 const summaryData = shallowRef(summaryCardsConf)
-const MOs = ref<any[]>([])
+const mos = ref<Record<MOSummaryStatus, DeepExpandedMO[]>>({ 'Not Started': [], 'Active': [], 'Completed': [], 'Total': [] })
 const selectedMOStatus = ref<MOSummaryStatus>('Total')
 const isMOViewLoading = ref(true)
 onMounted(async () => {
-    const res = await apiHandle('/api/collections/MO_View/records', 'GET')
-    if (!(res && res.success && res.data && res.data.items))
+    const moRes = await getMOs()
+    if (!moRes.data)
         return
 
-    MOs.value = res.data.items as any[]
-    const MOStatusesCounts: Record<MOSummaryStatus, number> = { 'Not Started': 0, 'Active': 0, 'Completed': 0, 'Total': MOs.value.length }
-    MOs.value.forEach(MO => { MOStatusesCounts[MO.MO_Status as MOSummaryStatus]++ })
-    Object.entries(MOStatusesCounts).forEach(([k, v]) => summaryData.value[k as MOSummaryStatus].count = v)
+    const expandedMos = moRes.data.items
+    expandedMos.forEach(mo => {
+        mos.value['Total'].push(mo)
+        switch (mo.status) {
+            case 'Active': mos.value['Active'].push(mo); break;
+            case 'Completed': mos.value['Completed'].push(mo); break;
+            case 'Not Started': mos.value['Not Started'].push(mo); break;
+        }
+    })
+    summaryData.value.Active.count = mos.value.Active.length
+    summaryData.value.Completed.count = mos.value.Completed.length
+    summaryData.value['Not Started'].count = mos.value['Not Started'].length
+    summaryData.value.Total.count = mos.value.Total.length
     isMOViewLoading.value = false
 })
-const moShowList = computed(() => {
-    return MOs.value.filter((mo) => { return (selectedMOStatus.value == 'Total' || selectedMOStatus.value == mo.MO_Status) })
-})
+
 
 </script>
 
@@ -39,15 +46,18 @@ const moShowList = computed(() => {
         <div id="dashboard-main-container">
             <NavigationBar pageName="Dashboard" />
             <div id="summary-cards-container">
-                <SummaryCard v-for="(summaryCard, title) in summaryData" :key="title" :summaryData="summaryCard" :isLoading="isMOViewLoading" :isSelected="selectedMOStatus == title" :title="title" @selectedSummaryType="s => selectedMOStatus = s" />
+                <SummaryCard v-for="(summaryCard, title) in summaryData" :key="title" :summaryData="summaryCard"
+                    :isLoading="isMOViewLoading" :isSelected="selectedMOStatus == title" :title="title"
+                    @selectedSummaryType="s => selectedMOStatus = s" />
             </div>
-            <div  class="mo-cards-container">
+            <div class="mo-cards-container">
                 <Skeleton style="width: 24rem;height: 10rem;" v-if="isMOViewLoading" />
                 <Skeleton style="width: 24rem;height: 10rem;" v-if="isMOViewLoading" />
                 <Skeleton style="width: 24rem;height: 10rem;" v-if="isMOViewLoading" />
             </div>
             <TransitionGroup class="mo-cards-container" tag="MOCard" name="list">
-                <MOCard v-if="!isMOViewLoading" v-for="mo, i in moShowList" :key="i" :MOData="mo" @click="router.push(`/manufacturing-order-info/${mo.id}`)" />
+                <MOCard v-if="!isMOViewLoading" v-for="mo, i in mos[selectedMOStatus]" :key="i" :MOData="mo"
+                    @click="router.push(`/manufacturing-order-info/${mo.id}`)" />
             </TransitionGroup>
         </div>
     </div>

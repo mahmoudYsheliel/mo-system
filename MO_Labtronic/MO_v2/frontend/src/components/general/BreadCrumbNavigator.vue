@@ -1,18 +1,16 @@
 <script lang="ts" setup>
-import type { BreadCrumb } from '@/types/breadCrumb';
+import type { BreadCrumb } from '@/types/bread-crumb';
 import  {type PropType } from 'vue'
 import { Skeleton } from 'primevue';
 
 const props = defineProps({breadCrumbElements:{type:Array as PropType<BreadCrumb[]>}})
-
 </script>
 
 
 
 <template>
     <div class="bread-crumb-container" >
-        <Skeleton v-if="!breadCrumbElements?.length"  style="width: 15rem;border-radius: 0.25rem;"/>
-
+        <Skeleton v-if="!breadCrumbElements"  style="width: 15rem;border-radius: 0.25rem;"/>
         <p class="bread-crumb-element" v-for="e in breadCrumbElements" @click="e.command()">{{ e.name }}</p>
     </div>
 </template>
@@ -23,6 +21,9 @@ const props = defineProps({breadCrumbElements:{type:Array as PropType<BreadCrumb
 .bread-crumb-container{
     display: flex;
     gap: 0.25rem;
+    width: max-content;
+    overflow: auto;
+    
 }
 .bread-crumb-element{
     font-weight: 500;

@@ -1,84 +1,60 @@
 <script setup lang="ts">
 import SideBar from '@/components/general/SideBar.vue';
-import { apiHandle } from '@/services/apiService';
 import { onMounted, ref } from 'vue';
 import MODates from '@/components/manufacturing-order-info/MODates.vue';
 import Notes from '@/components/manufacturing-order-info/Notes.vue';
 import BreadCrumbNavigator from '@/components/general/BreadCrumbNavigator.vue';
-import { type BreadCrumb } from '@/types/breadCrumb';
+import { type BreadCrumb } from '@/types/bread-crumb';
 import NavigationBar from '@/components/general/NavigationBar.vue';
-import useUsersNames from '@/stores/usersNames';
 import { MORepresentativeColors, priorityColor } from '@/constants/colors';
-import type { Priority, MODate } from '@/types/mo-order';
+import type { MODate } from '@/types/mo-order';
 import Chip from '@/components/general/Chip.vue';
-import type { UserType } from '@/types/user';
-import { type FetchedNote } from '@/types/note';
 import CheckList from '@/components/project-info/CheckList.vue';
 import FilesImages from '@/components/project-info/FilesImages.vue';
 import { useRouter, useRoute } from 'vue-router';
 import MOCard from '@/components/dashboard/MOCard.vue';
+import { getExpandedProject, type DeepExpandedProject } from '@/services/apis/project.service';
 
 const router = useRouter()
 const route = useRoute()
-const projectName = ref()
+const project = ref<DeepExpandedProject>({})
 const breadCrumbData = ref<BreadCrumb[]>([])
-const userNames = useUsersNames()
-const projectPriority = ref<Priority>();
-const engineers = ref<Partial<Record<UserType, string>>>({});
-const projectDatesObj = ref<MODate>({});
-const notes = ref<FetchedNote[]>()
-const checkList = ref('')
-const assemblyPics = ref<any[]>([])
-const assemblyfiles = ref<any[]>([])
-const projectFiles = ref<any[]>([])
-const MOs = ref<any[]>([])
 
+const projectDatesObj = ref<MODate>({});
 
 onMounted(async () => {
     const projectId = route.params.id
 
-    const { success, data } = await apiHandle(`/api/collections/Projects_T/records/${projectId}`, 'GET', true)
-    if (!success || !data) return
-    const projectData = data
+    const projectRes = await getExpandedProject(projectId as string)
+    const projectData = projectRes.data
 
-    const { data: uniData, success: uniSuccess } = await apiHandle('/api/collections/Uni_T/records', 'GET', true, `?filter=(id='${projectData.University}')`)
-    const { data: labData, success: labSuccess } = await apiHandle('/api/collections/Lab_T/records', 'GET', true, `?filter=(id='${projectData.Lab}')`)
+    if (!projectData) return
+    project.value = projectData
 
-    if (uniSuccess && labSuccess) {
-        const uniName = uniData.items[0]?.Uni_Name
-        const labName = labData.items[0]?.Lab_Name
-        breadCrumbData.value?.push({ name: uniName, command: () => { } });
-        breadCrumbData.value?.push({ name: labName, command: () => { } });
-        breadCrumbData.value?.push({ name: projectData?.Project_Name, command: () => { } });
-    }
+    const uniData = projectData?.expand?.universityId
+    const labData = projectData?.expand?.labId
 
-    projectName.value = projectData?.Project_Name
-    projectPriority.value = projectData.Periority
-
-    const names = await userNames.getUsers()
-    engineers.value['Project Manager'] = names?.find(n => n.id == projectData.Project_Manager[0]).Full_Name
-    engineers.value['Design Engineer'] = names?.find(n => n.id == projectData.Design_Engineer[0]).Full_Name
-    engineers.value['Production Engineer'] = names?.find(n => n.id == projectData.Production_Engineer[0]).Full_Name
-
-    projectDatesObj.value.start = projectData?.created;
-    projectDatesObj.value.estimated = projectData?.Est_Deadline;
-    projectDatesObj.value.finish = projectData?.Fin_Deadline;
-    notes.value = projectData?.Notes ?? JSON.parse(projectData?.Notes)
-    checkList.value = projectData.CheckList
-
-    assemblyPics.value = projectData.Assembly_Pic
-    assemblyfiles.value = projectData.Assembly_Files
-    projectFiles.value = projectData.Project_Files
+    breadCrumbData.value?.push({ name: uniData?.name || '', command: () => { router.push(`/university-info/${uniData?.id}`) } });
+    breadCrumbData.value?.push({ name: labData?.name || '', command: () => { router.push(`/lab-info/${labData?.id}`) } });
+    breadCrumbData.value?.push({ name: projectData?.name || '', command: () => { router.push(`/project-info/${projectData?.id}`) } });
 
 
-    const res = await apiHandle('/api/collections/MO_View/records', 'GET', true, `?filter=(Project='${projectId}')`)
-    if (!(res && res.success && res.data && res.data.items))
-        return
+    projectDatesObj.value.start = projectData.created ? new Date(projectData.created) : undefined
+    projectDatesObj.value.estimated = projectData.estDeadline ? new Date(projectData.estDeadline) : undefined
+    projectDatesObj.value.finish = projectData.finDeadline ? new Date(projectData.finDeadline) : undefined
 
-    MOs.value = res.data.items as any[]
 })
 
 
+async function reloadProject() {
+    const projectId = route.params.id as string
+    const res = await getExpandedProject(projectId)
+    const expandedProject = res.data
+
+    if (!expandedProject) return;
+
+    project.value = expandedProject
+}
 
 </script>
 
@@ -87,36 +63,52 @@ onMounted(async () => {
     <div id="project-info-container">
         <SideBar />
         <div id="project-info-main">
-            <NavigationBar :pageName="projectName" />
+            <NavigationBar :pageName="project.name" />
             <div id="project-info-main-body">
                 <BreadCrumbNavigator :breadCrumbElements="breadCrumbData" style="margin-top: 1rem" />
-                <div class="chip-line-constainer">
-                    <Chip :bg="priorityColor[projectPriority as Priority]" :label="projectPriority" />
-                    <Chip v-for="(engineer, engType) in engineers" :bg="MORepresentativeColors[engType as UserType]" :label="engineer" />
+                <div class="chip-line-container">
+                    <Chip v-if="project.priority" :bg="priorityColor[project.priority]" :label="project.priority" />
+                    <Chip v-if="project?.expand?.projectManagerId?.userName"
+                        :label="project?.expand?.projectManagerId?.userName"
+                        :bg="MORepresentativeColors['Project Manager']" />
+
+                    <Chip v-if="project?.expand?.designEngineersId?.[0]"
+                        :label="project.expand.designEngineersId[0].userName"
+                        :bg="MORepresentativeColors['Design Engineer']" />
+
+                    <Chip v-if="project?.expand?.productionEngineersId?.[0]?.userName"
+                        :label="project?.expand?.productionEngineersId?.[0]?.userName"
+                        :bg="MORepresentativeColors['Production Engineer']" />
                 </div>
 
-                <MODates :start="projectDatesObj.start" :estemated="projectDatesObj.estimated" :finished="projectDatesObj.finish" id="project-dates" />
+                <div id="main-body">
+                    <MODates :startDate="projectDatesObj.start" :estDate="projectDatesObj.estimated"
+                        :finDate="projectDatesObj.finish" id="project-dates" />
 
-                <div class="project-info-section-container">
-                    <CheckList :checkListString="checkList" />
-                </div>
-                <div class="project-info-section-container">
-                    <FilesImages :assemblyPics="assemblyPics" :assemblyfiles="assemblyfiles" :projectFiles="projectFiles" />
-                </div>
-                <div class="project-info-section-container">
-                    <Notes :fetchedNotes="notes" tableName="Projects_T" />
-                </div>
+                    <div class="checklist-files-container">
+                        <div style="flex: 2;"
+                            v-show="project.assemblyPics?.length || project.assemblyFiles?.length || project.projectFiles?.length">
+                            <FilesImages :assemblyPics="project.assemblyPics" :assemblyFiles="project.assemblyFiles"
+                                :projectFiles="project.projectFiles" />
+                        </div>
+                        <div style="flex: 1;" v-show="project.expand?.project_check_list_via_projectId?.length">
+                            <CheckList :checkList="project.expand?.project_check_list_via_projectId" />
+                        </div>
+
+                    </div>
+
+                    <Notes :notes="project.expand?.notes_via_projectId" @noteSent="reloadProject()"
+                        :projectId="project.id" />
 
 
-                <div class="project-info-section-container">
-                    <div id="project-notes-container">
+                    <div id="project-notes-container" v-show="project.expand?.mos_via_projectId?.length">
                         <h2 id="project-title">Manufacturing Orders</h2>
                         <TransitionGroup class="project-cards-container" tag="MOCard" name="list">
-                            <MOCard v-for="mo, i in MOs" :key="i" :MOData="mo" @click="router.push(`/manufacturing-order-info/${mo.id}`)" />
+                            <MOCard v-for="mo, i in project.expand?.mos_via_projectId" :key="i" :MOData="mo"
+                                @click="router.push(`/manufacturing-order-info/${mo.id}`)" />
                         </TransitionGroup>
                     </div>
                 </div>
-
 
             </div>
         </div>
@@ -142,9 +134,10 @@ onMounted(async () => {
     padding-inline: 2rem;
     max-height: 100%;
     overflow-y: auto;
+
 }
 
-.chip-line-constainer {
+.chip-line-container {
     margin-top: 1rem;
     display: flex;
     justify-content: center;
@@ -157,8 +150,11 @@ onMounted(async () => {
     scrollbar-track-color: none;
 }
 
-.project-info-section-container {
-    margin-block: 1rem;
+#main-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
 }
 
 .project-cards-container {
@@ -179,5 +175,17 @@ onMounted(async () => {
     box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
     background-color: white;
     border-radius: 0.25rem;
+}
+
+.checklist-files-container {
+    display: flex;
+    gap: 1rem;
+}
+
+@media screen and (max-width:1440px) {
+    .checklist-files-container {
+        flex-direction: column;
+
+    }
 }
 </style>

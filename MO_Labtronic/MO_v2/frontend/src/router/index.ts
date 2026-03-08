@@ -4,13 +4,13 @@ import {
   type RouteRecordRaw,
 } from "vue-router";
 import { type RouterMetaData } from "@/types/user";
-import { useAuth } from "@/stores/auth";
+import { isAuthenticated } from "@/services/user.service";
 
 const routes: Array<RouteRecordRaw & { meta: RouterMetaData }> = [
   {
     path: "/",
     name: "login",
-    component: () => import("@/views/general_view/Login.vue"),
+    component: () => import("@/views/Login.vue"),
     meta: { authRequired: false, userType: ["Any"] },
   },
   {
@@ -88,14 +88,12 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const auth = useAuth();
 
-
-  if (to.name === "login" && auth.isAuthenticated) {
+  if (to.name === "login" && isAuthenticated()) {
 
     next({ name: "dashboard" });
   }
-  if (to.name !== "login" && !auth.isAuthenticated) {
+  if (to.name !== "login" && !isAuthenticated()) {
     next({ name: "login" });
   }
   next();

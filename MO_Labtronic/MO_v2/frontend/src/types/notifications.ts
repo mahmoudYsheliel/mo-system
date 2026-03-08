@@ -1,4 +1,4 @@
-export type Notification =
+export type NotificationType =
   | "mo_created"
   | "mo_edited"
   | "mo_completed"

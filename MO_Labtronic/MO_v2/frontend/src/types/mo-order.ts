@@ -1,4 +1,5 @@
-export type MOSummaryStatus = "Active" | "Completed" | "Not Started" | "Total";
+export type MOStatus = "Active" | "Completed" | "Not Started" 
+export type MOSummaryStatus = MOStatus | "Total";
 export type Priority = "HIGH" | "MEDIUM" | "LOW";
 export type MOType =
   | "SheetMetal"
@@ -15,7 +16,7 @@ export interface BasicInfo {
   status?: MOSummaryStatus;
 }
 export interface MODate {
-  start?: string;
-  finish?: string;
-  estimated?: string;
+  start?:Date;
+  finish?: Date;
+  estimated?: Date;
 }

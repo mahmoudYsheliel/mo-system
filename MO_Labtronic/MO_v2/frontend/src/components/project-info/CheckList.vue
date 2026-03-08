@@ -1,33 +1,19 @@
 <script lang="ts" setup>
 import Checkbox from 'primevue/checkbox';
 import Button from 'primevue/button';
-import { apiHandle } from '@/services/apiService';
-import { postEvent } from '@/utils/mediator';
 import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { Toast,useToast } from 'primevue';
+import { type ProjectCheckListModel } from '@/models/project-check-list.model';
+import { batchUpdateCheckList } from '@/services/apis/project-checklist.service';
+const toast = useToast()
 
-
-type CheckListItem = {
-    label?: string;
-    isChecked?: boolean;
-};
-
-const items = ref<CheckListItem[]>([])
+const items = ref<ProjectCheckListModel[]>([])
 const originalState = ref('')
-const route = useRoute()
-const props = defineProps<{ checkListString: string; }>();
+const props = defineProps<{ checkList?: ProjectCheckListModel[]; }>();
 
 watch(props, () => {
-    items.value = props['checkListString'].split(',')
-        .map(s => s.trim())
-        .map(entry => {
-            const [label, value] = entry.split(' - ').map(v => v.trim());
-            return {
-                label,
-                isChecked: value?.toLowerCase() === 'true'
-            };
-        });
-    originalState.value = JSON.stringify(items.value)
+    items.value = props.checkList || []
+    originalState.value = JSON.stringify(props.checkList)
 })
 
 
@@ -37,17 +23,15 @@ const hasChanges = computed(() => {
 });
 
 async function updateCheckList() {
-    let sentNotes: any[] = []
-    for (const note of items.value) {
-        sentNotes.push(note.label + ' - ' + String(note.isChecked))
-    }
-    const res = await apiHandle(`/api/collections/Projects_T/records/${route.params.id}`, 'PATCH', true, '', { CheckList: sentNotes.join(' , ') })
 
+    const res = await batchUpdateCheckList(items.value)
+    
     if(res.success){
-        postEvent('add_toast', {
+        toast.add( {
             severity: 'success',
             summary: 'Updates',
-            detail: 'Check list was successfully'
+            detail: 'Check list was successfully',
+            life:3000
         })
         originalState.value = JSON.stringify(items.value)
     }
@@ -57,12 +41,13 @@ async function updateCheckList() {
 </script>
 
 <template>
+    <Toast />
     <div id="checklist-notes-container">
         <h2 id="checklist-notes-title">Check List</h2>
         <div id="checklist-notes-wrapper">
             <div class="checklist-item" v-for="item, i in items" :key="i">
-                <Checkbox v-model="item.isChecked" :inputId="'item' + i" binary />
-                <label :for="'item' + i"> {{ item.label }} </label>
+                <Checkbox v-model="item.isDone" :inputId="'item' + i" binary />
+                <label :for="'item' + i"> {{ item.item }} </label>
             </div>
 
         </div>

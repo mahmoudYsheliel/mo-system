@@ -5,15 +5,16 @@ import NoteIcon from '@/icons/NoteIcon.vue';
 import { ProgressBar } from 'primevue';
 import { priorityColor } from '@/constants/colors';
 import type { MOSummaryStatus, Priority } from '@/types/mo-order'
-import { useAuth } from '@/stores/auth';
+import { getUser } from '@/services/user.service';
 import { moStatusColorMap } from '@/constants/colors';
+import type { DeepExpandedMO } from '@/services/apis/mo.service';
 
 
-const props = defineProps(['MOData'])
-const auth = useAuth()
-function isReadByUser(){
-    const seen =  props.MOData.Seen as any[]
-    return seen?.includes(auth.user.id)
+const props = defineProps<{ MOData: DeepExpandedMO | undefined }>()
+function isReadByUser() {
+    const seen = props.MOData?.seenBy 
+    const userId =getUser()?.id
+    return (userId && seen) ? seen?.includes(userId) : false
 }
 </script>
 
@@ -22,35 +23,40 @@ function isReadByUser(){
         <div class="mo-card-header">
             <div class="mo-card-left-header">
                 <div class="mo-card-is-read" v-if="!isReadByUser()"></div>
-               
-                <p class="mo-card-title">{{ MOData.MO_Name }}</p>
-                <p class="mo-card-priority" v-if="(MOData.Periority as Priority)" :style="{ backgroundColor: priorityColor[MOData.Periority as Priority] }">{{ MOData.Periority }}</p>
+
+                <p class="mo-card-title">{{ MOData?.name }}</p>
+                <p class="mo-card-priority" v-if="(MOData?.priority)"
+                    :style="{ backgroundColor: priorityColor[MOData.priority ] }">{{ MOData.priority }}</p>
             </div>
             <div class="mo-card-right-header">
                 <div class="mo-card-new-notes">
-                    <NoteIcon class="mo-card-icon" v-if="MOData.Notes_Status == 'True'" />
+                    <NoteIcon class="mo-card-icon" v-if="MOData?.expand?.notes_via_moId?.length" />
                 </div>
                 <div class="mo-card-message-status">
-                    <SingleCheckMark v-if="MOData.Files_Sent_Status == 'Some Sent'" class="mo-card-icon" />
-                    <DoubleCheckIcon v-if="MOData.Files_Sent_Status == 'All Sent'" class="mo-card-icon" />
+                    <DoubleCheckIcon  v-if="MOData?.isAllFilesSent" class="mo-card-icon" />
+                    <SingleCheckMark v-else class="mo-card-icon" />
                 </div>
-                <p class="mo-card-status" :style="{ backgroundColor: moStatusColorMap[MOData.MO_Status as MOSummaryStatus] }">{{ MOData.MO_Status }}</p>
+                <p class="mo-card-status" v-if="MOData?.status"
+                    :style="{ backgroundColor: moStatusColorMap[MOData?.status] }">{{MOData?.status }}</p>
             </div>
         </div>
         <div class="mo-card-main">
             <div class="mo-card-current-process">
             </div>
             <div class="mo-card-uni-lab">
-                <div class="mo-card-uni">{{ MOData.Project_Name }}</div>
-                <div class="mo-card-uni">{{ MOData.Project_Code }}</div>
+                <div class="mo-card-uni">{{ MOData?.expand?.projectId?.name }}</div>
+                <div class="mo-card-uni">{{ MOData?.expand?.projectId?.code }}</div>
             </div>
             <div class="mo-card-parts-engs">
-                <div class="mo-card-engs">{{ MOData.Project_Manager }} - {{ MOData.Production_Engineer }} - {{ MOData.Design_Engineer }} </div>
-                <div class="mo-card-parts">{{ MOData.Parts_Count }} Parts</div>
+                <div class="mo-card-engs">
+                    {{ MOData?.expand?.projectId?.expand?.projectManagerId?.userName }} - 
+                    {{ MOData?.expand?.projectId?.expand?.productionEngineersId?.[0]?.userName }} - 
+                    {{ MOData?.expand?.projectId?.expand?.designEngineersId?.[0]?.userName  }} </div>
+                <div class="mo-card-parts">{{ MOData?.expand?.parts_via_moId?.length || 'No' }} Parts</div>
             </div>
             <div class="mo-card-progress">
                 <div class="mo-card-prog-bar">
-                    <ProgressBar :value="MOData.Completed" />
+                    <ProgressBar :value="MOData?.completionPercentage" />
                 </div>
 
             </div>
@@ -87,7 +93,7 @@ function isReadByUser(){
     align-items: center;
     justify-content: space-between;
     padding-bottom: 1rem;
-    border-bottom: 2px var(--color-secondary) solid;
+    border-bottom: 2px #ebebeb solid;
 }
 
 .mo-card-is-read {
@@ -116,7 +122,7 @@ function isReadByUser(){
 .mo-card-parts-engs,
 .mo-card-progg-percentage,
 .mo-card-uni-lab {
-    color: var(--color-muted-foreground);
+    color: #757575;
     font-size: 0.75rem;
     display: flex;
     justify-content: space-between;

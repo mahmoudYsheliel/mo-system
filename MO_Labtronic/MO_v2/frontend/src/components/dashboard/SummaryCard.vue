@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Skeleton } from 'primevue'
-import type { SummaryData } from '@/types/summaryData'
+import type { SummaryData } from '@/types/summary-data'
 import type { PropType } from 'vue'
 
 

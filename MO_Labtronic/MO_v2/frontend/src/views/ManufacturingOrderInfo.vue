@@ -8,220 +8,177 @@ import MOParts from "@/components/manufacturing-order-info/MOParts.vue";
 import MOFiles from "@/components/manufacturing-order-info/MOFiles.vue";
 import SideBar from "@/components/general/SideBar.vue";
 import {
-  MOTypeColors,
-  priorityColor,
-  MOStatusColors,
-  MORepresentativeColors,
+    MOTypeColors,
+    priorityColor,
+    MORepresentativeColors,
+    moStatusColorMap,
 } from "@/constants/colors";
 
-import type {
-  MODate,
-  Priority,
-  MOType,
-  BasicInfo,
-  MOSummaryStatus,
-} from "@/types/mo-order";
-import type { PartStatus } from "@/types/part";
-import type { UserType } from "@/types/user";
-import type { BreadCrumb } from "@/types/breadCrumb";
-import type { FetchedNote } from "@/types/note";
-import type { MOFileStructure } from "@/types/moFile";
+import type { MODate, MOType } from "@/types/mo-order";
+import type { BreadCrumb } from "@/types/bread-crumb";
 import Button from "primevue/button";
-import { apiHandle } from "@/services/apiService";
 import { onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
-import { useAuth } from "@/stores/auth";
+import { useRoute, useRouter } from "vue-router";
 import SelectPEngDialog from "@/components/dialogs/SelectPEngDialog.vue";
 import SetEndDateDialog from "@/components/dialogs/SetEndDateDialog.vue";
-import useUsersNames from "@/stores/usersNames";
+import { getMO, markMoSeen } from "@/services/apis/mo.service";
+import { getUser } from "@/services/user.service";
+import { type DeepExpandedMO } from "@/services/apis/mo.service";
+import { createNotification } from "@/services/apis/mo-notification.service";
+import type { ProcessModel } from "@/models/process.model";
 
-
-
-const userNamesStore = useUsersNames();
-const users = ref<any[]>([]);
-
-const auth = useAuth();
 const route = useRoute();
+const router = useRouter();
 
 const breadCrumbData = ref<BreadCrumb[]>([]);
-const basicInfo = ref<BasicInfo>({});
-const engineers = ref<Partial<Record<UserType, string>>>({});
+
 const MODatesObj = ref<MODate>({});
-const notes = ref<FetchedNote[]>([]);
-const moName = ref("");
-const projectName = ref("");
-const filesStatus = ref<MOFileStructure[]>([]);
-const MOId = ref<string>("");
 
-const selectPEngdialog = ref(false)
-const setEndDatedialog = ref(false)
+const selectPEngDialog = ref(false)
+const setEndDateDialog = ref(false)
 
-const isDesigner = ref(false)
+const currentUser = getUser()
+
+const isDesigner = currentUser?.roles?.includes('Design Engineer')
 const isMoProduction = ref(false)
+const mo = ref<DeepExpandedMO>()
 onMounted(async () => {
-  const res = await apiHandle(
-    "/api/collections/MO_View/records",
-    "GET",
-    true,
-    `?filter=(id='${route.params.id}')`
-  );
+    const moId = route.params.id as string
+    const res = await getMO(moId)
+    const moData = res.data
 
-  const data = res?.data?.items[0];
-  if (!data) return;
+    if (!moData) return;
+    mo.value = moData
+    await markMoSeen(moData)
 
-  users.value = (await userNamesStore.getUsers()) || [];
-  moName.value = data.MO_Name;
-  MOId.value = data.id;
-  projectName.value = data.Project_Name;
-  breadCrumbData.value?.push({ name: data.University_Name, command: () => { } });
-  breadCrumbData.value?.push({ name: data.Project_Name, command: () => { } });
-  breadCrumbData.value?.push({ name: data.Lab_Name, command: () => { } });
-  breadCrumbData.value?.push({ name: data.MO_Name, command: () => { } });
+    const uniData = moData.expand?.projectId?.expand?.universityId
+    const labData = moData.expand?.projectId?.expand?.labId
+    const projectData = moData.expand?.projectId
 
-  basicInfo.value.priority = data.Periority as Priority;
-  basicInfo.value.status = data.MO_Status as MOSummaryStatus;
-  basicInfo.value.type = data.MO_Type as MOType;
+    breadCrumbData.value?.push({ name: uniData?.name || '', command: () => { router.push(`/university-info/${uniData?.id}`) } });
+    breadCrumbData.value?.push({ name: labData?.name || '', command: () => { router.push(`/lab-info/${labData?.id}`) } });
+    breadCrumbData.value?.push({ name: projectData?.name || '', command: () => { router.push(`/project-info/${projectData?.id}`) } });
+    breadCrumbData.value?.push({ name: moData.name || '', command: () => { } });
 
-  engineers.value['Design Engineer'] = data?.Design_Engineer;
-  engineers.value['Production Engineer'] = data?.Production_Engineer;
-  engineers.value['Project Manager'] = data?.Project_Manager;
+    MODatesObj.value.start = moData.created ? new Date(moData.created) : undefined
+    MODatesObj.value.estimated = moData.estDeadline ? new Date(moData.estDeadline) : undefined
+    MODatesObj.value.finish = moData.finDeadline ? new Date(moData.finDeadline) : undefined
 
-  MODatesObj.value.start = data?.MO_Date;
-  MODatesObj.value.estimated = data?.Est_Deadline;
-  MODatesObj.value.finish = data?.Fin_Deadline;
-  notes.value = data?.Notes;
-
-  let seen = data?.Seen as any[];
-  if (!seen.includes(auth.user.id)) {
-    seen.push(auth.user.id);
-    apiHandle(
-      `/api/collections/MO_T/records/${route.params.id}`,
-      "PATCH",
-      true,
-      undefined,
-      { Seen: JSON.stringify(seen) }
-    );
-  }
-
-  const fs = data?.Files_Status as string;
-  filesStatus.value = organizeData(fs);
-
-
-
-  isDesigner.value = auth.user.Role.includes('Design Engineer')
-  const currentMo = await apiHandle(`/api/collections/MO_T/records/${MOId.value}`,'GET',true)
-  isMoProduction.value = currentMo.data.Production_Engineer.includes(auth.user.id)
-
-  // show set end date dialog if Est_Deadline is undefiend and the current user is the production engineer for the mo
-  setEndDatedialog.value = !(!!data?.Est_Deadline) && isMoProduction.value;
+    isMoProduction.value = (mo.value.productionEngineer === currentUser?.id)
+    // show set end date dialog if Est_Deadline is undefined and the current user is the production engineer for the mo
+    setEndDateDialog.value = !(!!moData.estDeadline) && isMoProduction.value;
 
 });
+async function reloadMo(note?: string) {
+    const moId = route.params.id as string
+    const res = await getMO(moId)
+    const expandedMo = res.data
+    if (!expandedMo) return;
+    const newProcesses = expandedMo.expand?.parts_via_moId?.flatMap(part => part.expand?.processes_via_partId || []) ?? [];
+    if(checkProcessRejectionUpdate(newProcesses)) createNotification({ mo: expandedMo, notificationType: 'process_rejected' })
+    mo.value = expandedMo
 
-function organizeData(data: string): MOFileStructure[] {
-  // this is a temporary function untill database get cleaner
-  const objectStrings = data.split("{"); // this is each object assuming no data contains '{'
-  const objects: MOFileStructure[] = objectStrings
-    .map((os) => {
-      const fields = os
-        .replace(/[{}\[\]]/g, "")
-        .trim()
-        .split(",");
-      if (fields.length > 3) {
-        return {
-          fileName: fields[0] || "",
-          isSent:
-            fields[1] && (fields[1].includes("t") || fields[1].includes("T"))
-              ? true
-              : false,
-          senderName:
-            (users.value.find((u) => {
-              return u.id == fields[2];
-            })?.id as string) || "",
-          sentDate: fields[3] || "",
-        };
-      }
-      return null;
-    })
-    .filter((o) => o !== null);
-  return objects;
+    if (note) createNotification({ mo: expandedMo, notificationType: 'mo_note', addedNote: note })
+    if (expandedMo.completionPercentage === 100) createNotification({ mo: expandedMo, notificationType: 'mo_completed' })
+
 }
-
+function checkProcessRejectionUpdate(newProcesses: ProcessModel[]):Boolean {
+    const oldProcesses = mo.value?.expand?.parts_via_moId?.flatMap(part => part.expand?.processes_via_partId || []) ?? []
+    for (const oldP of oldProcesses) {
+        if (oldP.status == 'Rejected') continue
+            const newStatus = newProcesses.find(newP => newP.id === oldP.id)?.status
+        if (newStatus == 'Rejected') return true
+    }
+    return false
+}
 
 
 </script>
 
 <template>
-  <SelectPEngDialog v-model:visible="selectPEngdialog" />
-  <SetEndDateDialog v-model:visible="setEndDatedialog" />
-  <div id="mo-info-container">
-    <SideBar />
-    <div id="mo-info-main">
-      <NavigationBar :pageName="moName" />
-      <div id="mo-info-main-body">
-        <BreadCrumbNavigator :breadCrumbElements="breadCrumbData" style="margin-top: 1rem" />
-        <div class="chip-line-constainer">
-          <Chip :bg="MOTypeColors[basicInfo.type as MOType]" :label="basicInfo.type" />
-          <Chip :bg="priorityColor[basicInfo.priority as Priority]" :label="basicInfo.priority" />
-          <Chip :bg="MOStatusColors[basicInfo.status as PartStatus]" :label="basicInfo.status" />
-          <Chip v-for="(engineer, engType) in engineers" :bg="MORepresentativeColors[engType as UserType]" :label="engineer" />
-        </div>
+    <SelectPEngDialog v-model:visible="selectPEngDialog" />
+    <SetEndDateDialog v-model:visible="setEndDateDialog" />
+    <div id="mo-info-container">
+        <SideBar />
+        <div id="mo-info-main">
+            <NavigationBar :pageName="mo?.name" />
+            <div id="mo-info-main-body">
+                <BreadCrumbNavigator :breadCrumbElements="breadCrumbData" style="margin-top: 1rem" />
+                <div class="chip-line-container">
+                    <Chip v-if="mo?.type" :bg="MOTypeColors[mo.type as MOType]" :label="mo.type" />
+                    <Chip v-if="mo?.priority" :bg="priorityColor[mo.priority]" :label="mo.priority" />
+                    <Chip v-if="mo?.status" :bg="moStatusColorMap[mo.status]" :label="mo.status" />
 
-        <MODates :start="MODatesObj.start" :estemated="MODatesObj.estimated" :finished="MODatesObj.finish" id="mo-dates" />
-        <div class="mo-info-section-container">
-          <Notes :fetchedNotes="notes" tableName="MO_T" />
+                    <Chip v-if="mo?.expand?.projectId?.expand?.projectManagerId?.userName"
+                        :label="mo?.expand?.projectId?.expand?.projectManagerId?.userName"
+                        :bg="MORepresentativeColors['Project Manager']" />
+
+                    <Chip v-if="mo?.expand?.projectId?.expand?.designEngineersId?.[0]"
+                        :label="mo.expand.projectId.expand.designEngineersId[0].userName"
+                        :bg="MORepresentativeColors['Design Engineer']" />
+
+                    <Chip v-if="mo?.expand?.productionEngineer" :label="mo?.expand?.productionEngineer.userName"
+                        :bg="MORepresentativeColors['Production Engineer']" />
+
+                </div>
+
+                <MODates :startDate="MODatesObj.start" :estDate="MODatesObj.estimated" :finDate="MODatesObj.finish"
+                    id="mo-dates" />
+                <div class="mo-info-section-container">
+                    <Notes :notes="mo?.expand?.notes_via_moId" @noteSent="(note) => reloadMo(note)" :moId="mo?.id" />
+                </div>
+                <div class="mo-info-section-container" v-show="mo?.expand?.mo_files_via_moId">
+                    <MOFiles :projectName="mo?.expand?.projectId?.name" :MOName="mo?.name" :MOId="mo?.id"
+                        :files="mo?.expand?.mo_files_via_moId" />
+                </div>
+                <div class="mo-info-section-container">
+                    <MOParts :originalParts="mo?.expand?.parts_via_moId" @updateProcesses="reloadMo()" />
+                </div>
+            </div>
         </div>
-        <div class="mo-info-section-container" v-show="filesStatus.length">
-          <MOFiles :projectName="projectName" :MOName="moName" :MOId="MOId" :users="users" :files="filesStatus" />
-        </div>
-        <div class="mo-info-section-container">
-          <MOParts :MOId="MOId" />
-        </div>
-      </div>
+        <Button v-if="isDesigner || isMoProduction" @click="selectPEngDialog = !selectPEngDialog;"
+            class="change-eng-btn" label="Change Production Eng" />
     </div>
-    <Button v-if="isDesigner || isMoProduction" @click="selectPEngdialog = !selectPEngdialog;" class="change-eng-btn" label="Change Production Eng" />
-  </div>
 
 </template>
 
 <style scoped>
 #mo-info-container {
-  display: grid;
-  grid-template-columns: max-content auto;
+    display: grid;
+    grid-template-columns: max-content auto;
 }
 
 #mo-info-main {
-  display: grid;
-  max-height: 100vh;
-  grid-template-rows: max-content 1fr;
+    display: grid;
+    max-height: 100vh;
+    grid-template-rows: max-content 1fr;
 }
 
 #mo-info-main-body {
-  padding-inline: 2rem;
-  max-height: 100%;
-  overflow-y: auto;
+    padding-inline: 2rem;
+    max-height: 100%;
+    overflow-y: auto;
 }
 
-.chip-line-constainer {
-  margin-top: 1rem;
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  max-width: 100%;
-  overflow-x: auto;
-  padding: 0 1rem 0.5rem 1rem;
-  scrollbar-width: thin;
-  scrollbar-color: #aaa transparent;
-  scrollbar-track-color: none;
+.chip-line-container {
+    margin-top: 1rem;
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: #aaa transparent;
 }
 
 .mo-info-section-container {
-  margin-block: 1rem;
+    margin-block: 1rem;
 }
 
 .change-eng-btn {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  font-size: 0.75rem;
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    font-size: 0.75rem;
 }
 </style>

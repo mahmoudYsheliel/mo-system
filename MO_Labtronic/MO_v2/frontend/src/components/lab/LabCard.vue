@@ -1,17 +1,18 @@
 <script lang="ts" setup>
+import { type DeepExpandedLab } from '@/services/apis/lab.service';
 import { useRouter } from 'vue-router';
 
 const router =useRouter()
-defineProps(["lab"])
+defineProps<{lab:DeepExpandedLab}>()
 </script>
 
 <template>
     <div class="lab-container"  @click="router.push(`/lab-info/${lab.id}`)">
         <div class="lab-info">
-            <p>{{ lab.Lab_Name }}</p>
-            <p>{{ lab.Lab_Code }}</p>
+            <p>{{ lab.name }}</p>
+            <p>{{ lab.code }}</p>
         </div>
-        <p data-v-84abed25="" style="font-weight: 600; margin-bottom: 0.25rem;">Projects Count: {{ lab.Projects_Count }}</p>
+        <p data-v-84abed25="" style="font-weight: 600; margin-bottom: 0.25rem;">Projects Count: {{ lab.expand?.projects_via_labId?.length }}</p>
     </div>
 </template>
 
@@ -33,6 +34,6 @@ defineProps(["lab"])
     justify-content: space-between;
     padding-bottom: 0.5rem;
     margin-bottom: 0.5rem;
-    border-bottom: 2px var(--color-secondary) solid;
+    border-bottom: 2px #ebebeb solid;
 }
 </style>

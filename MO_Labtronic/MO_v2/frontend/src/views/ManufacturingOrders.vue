@@ -4,24 +4,24 @@ import NavigationBar from '@/components/general/NavigationBar.vue';
 import MOCard from '@/components/dashboard/MOCard.vue';
 import { useRouter } from 'vue-router';
 import { onMounted, ref, watch, computed, TransitionGroup } from 'vue';
-import { apiHandle } from '@/services/apiService';
 import { InputText } from 'primevue';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import { Searcher } from 'fast-fuzzy';
 import Button from 'primevue/button';
 import NewMODialog from '@/components/dialogs/NewMODialog.vue';
-import { syncDB } from '@/services/sqlService';
+import { syncDB } from '@/services/sql.service';
+import { getMOs, type DeepExpandedMO } from '@/services/apis/mo.service';
 
 const router = useRouter()
-const MOs = ref<any[]>([])
+const MOs = ref<DeepExpandedMO[]>([])
 const showDialog = ref(false)
 const isMOViewLoading = ref(true)
 onMounted(async () => {
-    const res = await apiHandle('/api/collections/MO_View/records', 'GET',true,'?sort=-MO_Date')
+    const res = await getMOs()
     if (!(res && res.success && res.data && res.data.items))
         return
-    MOs.value = res.data.items as any[]
+    MOs.value = res.data.items 
     isMOViewLoading.value = false
 })
 

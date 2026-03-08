@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { createSideBarActions, createSideBarmMinItems } from '@/lib/buildSidebar';
+import { createSideBarActions, createSideBarmMinItems } from '@/lib/build-sidebar';
 import { type UserType } from '@/types/user';
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router';
-import { useAuth } from '@/stores/auth';
+import { getUser } from '@/services/user.service';
 import 'primeicons/primeicons.css'
-import { getFileLink } from '@/lib/helperFunctions';
+import { getFileLink } from '@/lib/helper-functions';
 
 const router = useRouter()
-const auth = useAuth()
 const sideBarmMinItems = createSideBarmMinItems(router)
 const sideBarActions = createSideBarActions(router)
 const showTitle = ref(false)
 const name = ref("")
 const title = ref("")
 const img = ref("")
-
+const user = getUser()
 function update() {
     showTitle.value = window.innerWidth < 800
 }
 
 
 function getAvatar() {
-    const user = auth.user
-    return getFileLink(user.collectionId, user.id, user.Avatar) || ""
+    if (!user) return 
+    return getFileLink(user.collectionId, user.id, user.avatar) || ""
 }
 
 onMounted(() => {
     update()
     window.addEventListener('resize', update)
-    name.value = auth.user?.Account_Name || ""
-    title.value = auth.user?.Role[0] || ""
-    img.value = auth.user?.Avatar || ""
+    name.value = user?.userName || ""
+    const roles = user?.roles
+    title.value = (roles && roles[0]) ? roles[0] :  ""
+    img.value = user?.avatar || ""
 })
 
 onUnmounted(() => {
@@ -98,14 +98,14 @@ defineProps(['selectedPage'])
     border-bottom-right-radius: 0.75rem;
     border-top-right-radius: 0.75rem;
     height: 100vh;
-    background-color: var(--color-background);
+    background-color: white;
 }
 
 i {
     font-size: 1.5rem;
     border-radius: 100%;
     padding: 0.25rem;
-    color: var(--color-muted-foreground);
+    color: #757575;
     color: white;
     background-color: #aaa;
 }
@@ -115,7 +115,7 @@ i {
     align-items: center;
     gap: 1rem;
     padding-bottom: 2rem;
-    border-bottom: var(--color-muted) solid 2px;
+    border-bottom: #f5f5f5 solid 2px;
     position: relative;
 }
 
@@ -126,7 +126,7 @@ i {
 }
 
 #side-bar-title {
-    color: var(--color-muted-foreground);
+    color: #757575;
     font-size: 0.75rem;
     letter-spacing: 0.4px;
     text-transform: uppercase;
@@ -158,19 +158,19 @@ i {
     width: 100%;
     padding: 0.5rem;
     border-radius: 0.5rem;
-    color: var(--color-muted-foreground);
+    color: #757575;
     font-weight: 500;
 
 }
 
 .side-bar-item:hover {
-    background-color: var(--color-popover);
-    color: var(--color-popover-foreground);
+    background-color: #f6f6f6;
+    color:black;
 }
 
 .selected_item {
-    background-color: var(--color-popover);
-    color: var(--color-popover-foreground);
+    background-color: #f6f6f6;
+    color:black;
 }
 
 .side-bar-item-icon {

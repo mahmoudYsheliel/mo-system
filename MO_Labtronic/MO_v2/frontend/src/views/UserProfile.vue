@@ -2,19 +2,18 @@
 import SideBar from '@/components/general/SideBar.vue';
 import NavigationBar from '@/components/general/NavigationBar.vue';
 import { onMounted, ref } from 'vue';
-import { useAuth } from '@/stores/auth';
-import { getFileLink } from '@/lib/helperFunctions';
+import { getFileLink } from '@/lib/helper-functions';
 import Button from 'primevue/button';
 import Password from 'primevue/password';
-import { apiHandle } from '@/services/apiService';
-import { postEvent } from '@/utils/mediator';
+import { Toast, useToast } from 'primevue';
+import { getUser, setUser } from '@/services/user.service';
+import type { AccountModel } from '@/models/account.model';
+import { updatePasswordApi, updateUserAvatar } from '@/services/apis/account.service';
+import type { UpdatePasswordModel } from '@/models/update-password.model';
+import { login } from '@/services/user.service';
 
-
-const name = ref('')
-const accountName = ref('')
-const role = ref('')
-const email = ref('')
-const id = ref('')
+const toast = useToast()
+const currentUser = ref<AccountModel | null>(null)
 const image = ref('')
 const fileRef = ref<any>()
 
@@ -23,30 +22,24 @@ const oldPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 
-const auth = useAuth()
 onMounted(() => {
-    name.value = auth.user?.Full_Name || ""
-    role.value = auth.user?.Role[0] || ""
-    email.value = auth.user?.email
-    accountName.value = auth.user?.Account_Name || ""
-    id.value = auth.user?.id
+    currentUser.value = getUser()
     image.value = getAvatar()
 })
 
 
 
 function getAvatar() {
-    const user = auth.user
-    return getFileLink(user.collectionId, user.id, user.Avatar) || ""
+    return getFileLink(currentUser.value?.collectionId, currentUser.value?.id, currentUser.value?.avatar) || ""
 }
 
-const inputFielRef = ref<HTMLInputElement | null>(null)
+const inputFileRef = ref<HTMLInputElement | null>(null)
 function triggerSelect() {
-    inputFielRef.value?.click()
+    inputFileRef.value?.click()
 }
 
 
-async function upladImage(event: Event) {
+async function uploadImage(event: Event) {
     try {
         const target = event.target as HTMLInputElement
         if (!target.files || !(target.files?.length > 0)) return
@@ -58,37 +51,47 @@ async function upladImage(event: Event) {
 
     }
     catch (err) {
-        postEvent('add_toast', {
+        toast.add({
             severity: 'error',
             summary: 'Update Failed',
-            detail: `Updating profile image failed: ${err}`
+            detail: `Updating profile image failed: ${err}`,
+            life: 3000
         })
     }
 }
 async function saveImage() {
     try {
         const formData = new FormData();
-        formData.append('Avatar', fileRef.value);
-        await apiHandle(
-            `/api/collections/Accounts_T/records/${id.value}`, 'PATCH', true, undefined, formData, 'data', 'form_data', null
-        );
-        postEvent('add_toast', {
+        formData.append('avatar', fileRef.value);
+        if (!currentUser.value?.id) {
+            toast.add({
+                severity: 'error',
+                summary: 'Update Failed',
+                detail: 'User does not exist',
+                life: 3000
+            })
+            return
+        }
+        const userResponse = await updateUserAvatar(currentUser.value.id, formData)
+        toast.add({
             severity: 'success',
             summary: 'Profile Updated',
-            detail: 'New profile image was set successfully'
+            detail: 'New profile image was set successfully',
+            life: 3000
         })
-        const userResponse = await apiHandle(`/api/collections/Accounts_T/records/${id.value}`, 'GET')
-        auth.setUser(userResponse.data)
+        if (userResponse?.data) setUser(userResponse?.data)
     }
     catch (err) {
-        postEvent('add_toast', {
+        toast.add({
             severity: 'error',
             summary: 'Update Failed',
-            detail: `Updating profile image failed: ${err}`
+            detail: `Updating profile image failed: ${err}`,
+            life: 3000
         })
     }
     finally {
         fileRef.value = null
+        currentUser.value = getUser()
         image.value = getAvatar()
     }
 }
@@ -99,35 +102,44 @@ async function cancelSaveImage() {
 
 }
 async function updatePassword() {
-
-
-    const body = {
+    if (!currentUser.value?.id || !currentUser.value.email) {
+        toast.add({
+            severity: 'error',
+            summary: 'Update Failed',
+            detail: 'User does not exist',
+            life: 3000
+        })
+        return
+    }
+    const body:UpdatePasswordModel = {
         oldPassword: oldPassword.value,
         password: newPassword.value,
         passwordConfirm: confirmPassword.value,
     }
-    const res = await apiHandle(`/api/collections/Accounts_T/records/${id.value}`, 'PATCH', true, undefined, body)
+    const res = await updatePasswordApi(currentUser.value.id,body) 
     if (res.success == true) {
-        postEvent('add_toast', {
+        toast.add({
             severity: 'success',
             summary: 'Updated Password',
-            detail: 'New password was set successfully'
+            detail: 'New password was set successfully',
+            life: 3000
         })
-        auth.login(email.value,newPassword.value)
+        login(currentUser.value.email, newPassword.value)
     }
     else {
-        const oldPassError = res.data.data['oldPassword']
-        const newPassError = res.data.data['password']
-        const confirmPassError = res.data.data['passwordConfirm']
-        
+        const oldPassError = res.error?.data.oldPassword
+        const newPassError = res.error?.data.password
+        const confirmPassError = res.error?.data.passwordConfirm
+
         const oldPassErrorMessage = oldPassError ? `\n Old Password: ${oldPassError.message}` : ''
         const newPassErrorMessage = newPassError ? ` \n New Password: ${newPassError.message}` : ''
         const confirmPassErrorMessage = confirmPassError ? ` \n Confirm Password: ${confirmPassError.message}` : ''
 
-        postEvent('add_toast', {
+        toast.add({
             severity: 'error',
             summary: 'Update Failed',
-            detail: `Updating password failed: ${oldPassErrorMessage} ${newPassErrorMessage} ${confirmPassErrorMessage} `
+            detail: `Updating password failed: ${oldPassErrorMessage} ${newPassErrorMessage} ${confirmPassErrorMessage} `,
+            life: 3000
         })
     }
 }
@@ -137,6 +149,7 @@ async function updatePassword() {
 </script>
 
 <template>
+    <Toast />
     <div id="user-profile-container">
         <SideBar />
         <div id="user-profile-main-container">
@@ -145,26 +158,34 @@ async function updatePassword() {
                 <div class="user-profile-img-container">
                     <img :src="image" alt="" class="user-profile-img">
                     <div class="name-email-container">
-                        <p> {{ accountName }} ({{ name }})</p>
-                        <p style="opacity: 0.5;font-size: 0.875rem;"> {{ email }} </p>
-                        <p style="opacity: 0.5;font-size: 0.875rem;font-weight: 600;"> {{ role }} </p>
+                        <p> {{ currentUser?.fullName }} ({{ currentUser?.userName }})</p>
+                        <p style="opacity: 0.5;font-size: 0.875rem;"> {{currentUser?.email}} </p>
+                        <p style="opacity: 0.5;font-size: 0.875rem;font-weight: 600;"> {{ currentUser?.roles?.[0] }} </p>
                     </div>
                     <div style="flex-grow: 2;"></div>
-                    <Button v-if="!fileRef" label="Edit Profile Image" style="font-size: 0.875rem;" @click="triggerSelect()" />
+                    <Button v-if="!fileRef" label="Edit Profile Image" style="font-size: 0.875rem;"
+                        @click="triggerSelect()" />
                     <div v-else style="display: flex; gap: 0.5rem">
                         <Button label="Save" severity="success" style="font-size: 0.875rem;" @click="saveImage()" />
-                        <Button label="Cancel" severity="danger" style="font-size: 0.875rem;" @click="cancelSaveImage()" />
+                        <Button label="Cancel" severity="danger" style="font-size: 0.875rem;"
+                            @click="cancelSaveImage()" />
                     </div>
 
-                    <input type="file" ref="inputFielRef" accept="image/*" @change="upladImage" style="display: none;" />
+                    <input type="file" ref="inputFileRef" accept="image/*" @change="uploadImage"
+                        style="display: none;" />
                 </div>
 
                 <div class="password-reset-container">
                     <p style="align-self: flex-start;font-weight: 500;">Reset Password</p>
-                    <Password v-model="oldPassword" style="width: 24rem;padding-left: 0.5rem;" placeholder="Old Password" toggleMask :feedback="false" />
-                    <Password v-model="newPassword" style="width: 24rem;padding-left: 0.5rem;" placeholder="New Password" toggleMask :feedback="false" />
-                    <Password v-model="confirmPassword" style="width: 24rem;padding-left: 0.5rem;" placeholder="Confirm Password" toggleMask :feedback="false" />
-                    <Button label="Reset Password" style="align-self: flex-end; padding-inline: 2rem;font-size: 0.875rem;" @click="updatePassword()" />
+                    <Password v-model="oldPassword" style="width: 24rem;padding-left: 0.5rem;"
+                        placeholder="Old Password" toggleMask :feedback="false" />
+                    <Password v-model="newPassword" style="width: 24rem;padding-left: 0.5rem;"
+                        placeholder="New Password" toggleMask :feedback="false" />
+                    <Password v-model="confirmPassword" style="width: 24rem;padding-left: 0.5rem;"
+                        placeholder="Confirm Password" toggleMask :feedback="false" />
+                    <Button label="Reset Password"
+                        style="align-self: flex-end; padding-inline: 2rem;font-size: 0.875rem;"
+                        @click="updatePassword()" />
                 </div>
             </div>
         </div>

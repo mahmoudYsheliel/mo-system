@@ -1,23 +1,29 @@
 <script lang="ts" setup>
 import { Dialog } from 'primevue';
 import FileUpload, { type FileUploadSelectEvent } from 'primevue/fileupload';
-import { ref,nextTick,watch } from 'vue';
+import { ref, nextTick } from 'vue';
 import Button from 'primevue/button';
-import { dbToJson, readDbFile } from '@/services/sqlService';
-import { apiHandle } from '@/services/apiService';
-import { postEvent } from '@/utils/mediator';
-import { type Severity } from '@/types/toast';
+import { dbToJson, readDbFile } from '@/services/sql.service';
 import { useRouter } from 'vue-router';
-
-
+import { Toast, useToast } from 'primevue';
+import { addMO, getMO, setMoProdEng } from '@/services/apis/mo.service';
+import type { MOModel } from '@/models/mo.model';
+import { getProject } from '@/services/apis/project.service';
+import type { DBPartModel, PartModel } from '@/models/part.model';
+import { addPart } from '@/services/apis/part.service';
+import type { ProcessModel } from '@/models/process.model';
+import { batchPostProcesses } from '@/services/apis/process.service';
+import { sendNotification } from '@/_archive/notification.service';
+import { createNotification } from '@/services/apis/mo-notification.service';
 
 const visible = defineModel<boolean>('visible')
 
 const jsonData = ref<Record<string, Record<string, any>[]> | undefined>(undefined)
 const fileName = ref('')
-
+const toast = useToast()
 const fileUploadRef = ref()
 const router = useRouter()
+
 async function onFileSelect(event: FileUploadSelectEvent) {
     try {
         const file = event.files[0]
@@ -35,8 +41,8 @@ async function onFileSelect(event: FileUploadSelectEvent) {
         }
         const data = dbToJson(tables as string[], db)
 
-        const moRecord = data['MO_Info']
-        const partRecords = data['Parts_List']
+        const moRecord = data['mos']
+        const partRecords = data['parts']
 
         if (!moRecord || !partRecords) {
             await clearUpload()
@@ -60,45 +66,50 @@ async function uploadEvent() {
             return
         }
         const data = jsonData.value
-        const moRecord = data['MO_Info']
-        const partRecords = data['Parts_List']
-        if (!moRecord || !partRecords) {
-            fireToast('error', 'Database Incorrect', 'MO_Info or Parts_List no found')
+        const moRecord = data['mos'] as MOModel[]
+        const partRecords = data['parts'] as DBPartModel[]
+        if (!moRecord[0] || !partRecords[0]) {
+            fireToast('error', 'Database Incorrect', 'mos or parts no found')
             return
         }
 
-        const moDta = moRecord[0]
-        const res = await apiHandle('/api/collections/MO_T/records', 'POST', true, '', moDta)
-        const moId = res?.data.id
+        const moData = moRecord[0]
+        const moRes = await addMO(moData)
+        const moId = moRes.data?.id
         if (!moId) {
             fireToast('error', 'MO Creation Failed', 'Could not save the ne MO')
             return
         }
+        if (moData.projectId) {
+            // add production engineer to the mo
+            const projectEndId = (await getProject(moData.projectId)).data?.productionEngineersId?.[0]
+            if (projectEndId) await setMoProdEng(moId, projectEndId)
+        }
 
-        // add production engineer to the mo
-        const projectEngRes = await apiHandle(`/api/collections/Project_T/records/${moDta?.Project}`,'GET',true, `?fields=Production_Engineer,`)
 
-        if(projectEngRes.success)
-            await apiHandle('/api/collections/MO_T/records', 'PATCH', true, '', {Production_Engineer:[projectEngRes.data[0]]})
-        
-        
         // add parts to the mo
         partRecords.forEach(async (part) => {
-            part['MO_Name'] = moId
-            const uint8 = new Uint8Array(part['P_Pic'])
+            part['moId'] = moId
+            const uint8 = new Uint8Array(part['pic'])
             const file = new File(
                 [uint8],
                 'image.png',
                 { type: 'image/png' }
             )
-            part['P_Pic'] = file
+            part['pic'] = file
             const formData = new FormData()
-            Object.entries(part).forEach(([k, v]) => { formData.append(k, v) })
-            await apiHandle('/api/collections/Parts_T/records', 'POST', true, '', formData, 'data', 'form_data')
+            Object.entries(part).forEach(([k, v]) => { if(k !== 'processes') formData.append(k, v) })
+            const partRes = await addPart(formData)
+            if (partRes.data?.id && part.processes) {
+                const processes = part.processes.split(',').map<ProcessModel>((proc, i) => ({ order: i, status: 'Not Started', partId: partRes.data?.id, name: proc }))
+                const procRes = await batchPostProcesses(processes)
+            }
         })
-        
         fireToast('success', 'MO Creation Succeeded', `Mo created successfully with id: ${moId}`)
         visible.value = false
+
+        const expandedMoRes = await getMO(moId)
+        if(expandedMoRes.data) await createNotification({mo:expandedMoRes.data,notificationType:'mo_created'})
         router.push(`/manufacturing-order-info/${moId}`)
     }
     catch (err) {
@@ -106,8 +117,8 @@ async function uploadEvent() {
     }
 };
 
-async function clearUpload(){
-    await nextTick() 
+async function clearUpload() {
+    await nextTick()
     fileUploadRef.value?.clear()
     fileName.value = ''
     jsonData.value = undefined
@@ -115,20 +126,21 @@ async function clearUpload(){
 
 
 
-function fireToast(severity: Severity, summary: string, detail: string) {
-    postEvent('add_toast', { severity, summary, detail })
+function fireToast(severity: string, summary: string, detail: string) {
+    toast.add({ severity, summary, detail })
 }
 
 </script>
 
 
 <template>
-    <Dialog v-model:visible="visible" modal header="Add New MO" >
-
-        <FileUpload  ref="fileUploadRef" @select="onFileSelect">
+    <Toast />
+    <Dialog v-model:visible="visible" modal header="Add New MO">
+        <FileUpload ref="fileUploadRef" @select="onFileSelect">
             <template #header="{ chooseCallback, files }">
                 <div class="upload-action-buttons">
-                    <Button v-if="!fileName" @click="chooseCallback()" icon="pi pi-plus" label="Browse" severity="secondary" />
+                    <Button v-if="!fileName" @click="chooseCallback()" icon="pi pi-plus" label="Browse"
+                        severity="secondary" />
                     <Button v-else @click="uploadEvent()" icon="pi pi-upload" label="Upload" severity="success" />
                 </div>
             </template>

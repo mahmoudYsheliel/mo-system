@@ -1,37 +1,40 @@
 <script setup lang="ts">
 import Select from 'primevue/select';
-import useUsersNames from '@/stores/usersNames';
+import { getUsers } from '@/services/apis/account.service';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { postEvent } from '@/utils/mediator';
-import { apiHandle } from '@/services/apiService';
+import { Toast, useToast } from 'primevue';
+import type { AccountModel } from '@/models/account.model';
+import { setMoProdEng } from '@/services/apis/mo.service';
 
+const toast = useToast()
 const route = useRoute()
 const visible = defineModel<boolean>('visible')
 const selectedEng = ref()
-const pEngs = ref<any[] | undefined>([])
-onMounted(() => {
-    const users = useUsersNames()
-    users.getUsers().then(res => pEngs.value = res?.filter(user => user.Role.includes('Production Engineer')))
+const pEngs = ref<AccountModel[] | undefined>([])
+onMounted(async () => {
+    const usersRes = await getUsers()
+    if (usersRes.success)
+        pEngs.value = usersRes.data?.items?.filter(user => user.roles?.includes('Production Engineer'))
 })
 
-async function setPEng(){
-    if(!selectedEng.value)
+async function setPEng() {
+    if (!selectedEng.value)
         return
     const moId = route.params.id
-    const res = await apiHandle(`/api/collections/MO_T/records/${moId}`,'PATCH',true,'',{Production_Engineer:[selectedEng.value.id]})
-    
-    if(res.success){
-        postEvent('add_toast', {
+    const res = await setMoProdEng(moId as string, selectedEng.value.id)
+
+    if (res.success) {
+        toast.add({
             severity: 'success',
             summary: 'Updated Successfully',
             detail: 'Production engineer was updated successfully'
         })
     }
-    else{
-        postEvent('add_toast', {
+    else {
+        toast.add({
             severity: 'error',
             summary: 'Failed to Update',
             detail: 'Production engineer could not be updated successfully'
@@ -43,10 +46,11 @@ async function setPEng(){
 </script>
 
 <template>
+    <Toast />
     <Dialog v-model:visible="visible" modal header="Select Production Engineer">
         <div class="select-eng-container">
-            <Select v-model="selectedEng" :options="pEngs" optionLabel="Full_Name" placeholder="Select an Engineer"  />
-            <Button @click="setPEng" label="Update Eng" style="width: 8rem;align-self: flex-end;"/>
+            <Select v-model="selectedEng" :options="pEngs" optionLabel="userName" placeholder="Select an Engineer" />
+            <Button @click="setPEng" label="Update Eng" style="width: 8rem;align-self: flex-end;" />
         </div>
     </Dialog>
 </template>

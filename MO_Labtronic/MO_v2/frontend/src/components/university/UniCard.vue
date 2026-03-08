@@ -1,16 +1,17 @@
 <script lang="ts" setup>
+import { type DeepExpandedUniversity } from '@/services/apis/university.service';
 import { useRouter } from 'vue-router';
 const router  = useRouter()
-defineProps(['uni'])
+defineProps<{uni:DeepExpandedUniversity}>()
 </script>
 
 <template>
 
     <div class="uni-container"  @click="router.push(`/university-info/${uni.id}`)">
         <div class="uni-info">
-            <p>{{ uni.Uni_Name }}</p>
+            <p>{{ uni.name }}</p>
         </div>
-        <p style="font-weight: 600; margin-bottom: 0.25rem;">Projects Count: {{ uni.Projects_Count }}</p>
+        <p style="font-weight: 600; margin-bottom: 0.25rem;">Projects Count: {{ uni.expand?.projects_via_universityId?.length || 0 }}</p>
     </div>
 </template>
 
@@ -33,7 +34,7 @@ defineProps(['uni'])
     justify-content: space-between;
     padding-bottom: 0.5rem;
     margin-bottom: 0.5rem;
-    border-bottom: 2px var(--color-secondary) solid;
+    border-bottom: 2px #ebebeb solid;
 }
 
 </style>

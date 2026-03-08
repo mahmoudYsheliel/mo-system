@@ -1,28 +1,28 @@
 <script setup lang="ts">
 import SideBar from '@/components/general/SideBar.vue';
 import NavigationBar from '@/components/general/NavigationBar.vue';
-import { onMounted, ref, watch, computed, TransitionGroup } from 'vue';
-import { apiHandle } from '@/services/apiService';
+import { onMounted, ref, computed, TransitionGroup } from 'vue';
+import { getLabs, type DeepExpandedLab } from '@/services/apis/lab.service';
 import { InputText } from 'primevue';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import { Searcher } from 'fast-fuzzy';
 import Button from 'primevue/button';
-import { syncDB } from '@/services/sqlService';
+import { syncDB } from '@/services/sql.service';
 import NewLabDialog from '@/components/dialogs/NewLabDialog.vue';
 import LabCard from '@/components/lab/LabCard.vue';
 
-const labs = ref<any[]>([])
+const labs = ref<DeepExpandedLab[]>([])
 
 
 const showDialog = ref(false)
 
 onMounted(async () => {
-    const labRes = await apiHandle('/api/collections/Lab_View/records', 'GET', true, )
+    const labRes = await getLabs()
 
-    if (!(labRes && labRes.success))
+    if (!labRes.data)
         return
-    labs.value = labRes.data.items as any[]
+    labs.value = labRes.data.items
 })
 const search = ref('')
 

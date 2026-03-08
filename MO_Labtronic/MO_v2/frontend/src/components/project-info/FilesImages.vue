@@ -1,23 +1,25 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
-import { getFileLink } from '@/lib/helperFunctions';
-import { downloadFile } from '@/services/downloadServices';
+import { getFileLink } from '@/lib/helper-functions';
+import { downloadFile } from '@/services/download.service';
 import Galleria from 'primevue/galleria';
 import { ref, watch } from 'vue';
 import Button from 'primevue/button';
 
 
 
-const props = defineProps(['assemblyPics', 'assemblyfiles', 'projectFiles'])
+const props = defineProps<{
+    assemblyPics?: string[], assemblyFiles?: string[], projectFiles?: string[]
+}>()
 const route = useRoute()
 const projectId = route.params.id as string
-const images = ref<string[]>([])
+const images = ref<{ src: string | undefined, alt: string }[]>([])
 
 function getProjectFileLink(fileName: string) {
-    return getFileLink('Projects_T', projectId, fileName)
+    return getFileLink('projects', projectId, fileName)
 }
 function downloadProjectFile(fileName: string) {
-    downloadFile('Projects_T', projectId, fileName)
+    downloadFile('projects', projectId, fileName)
 }
 function fileNameDivider(fileName: string) {
     const nameSections = fileName.split('.')
@@ -27,46 +29,19 @@ function fileNameDivider(fileName: string) {
     }
 }
 watch(props, () => {
-    images.value = props.assemblyPics?.map((ap: string) => {
-        return {
-            src: getProjectFileLink(ap),
-            alt: "Image Not Found"
-        }
-    })
+    if (props.assemblyPics)
+        images.value = props.assemblyPics?.map((ap: string) => {
+            return {
+                src: getProjectFileLink(ap),
+                alt: "Image Not Found"
+            }
+        })
 })
 
 function openFile(fileName: string) {
-    const fileLink = getFileLink('Projects_T', projectId, fileName)
+    const fileLink = getFileLink('projects', projectId, fileName)
     window.open(fileLink, '_blank')
 }
-
-const responsiveOptions = ref([
-    {
-        breakpoint: '1300px',
-        numVisible: 4
-    },
-    {
-        breakpoint: '575px',
-        numVisible: 1
-    }
-]);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 </script>
@@ -77,9 +52,10 @@ const responsiveOptions = ref([
 
         <div id="files-notes-wrapper">
 
-            <div style="grid-area: galaria;" class="project-images">
+            <div style="grid-area: galleria;" class="project-images" v-show="images.length">
                 <h3 id="files-notes-title">Project Images</h3>
-                <Galleria :value="images" :numVisible="4" circular :autoPlay="true" :transitionInterval="2000" :showThumbnails="false" :showItemNavigators="true">
+                <Galleria :value="images" :numVisible="4" circular :autoPlay="true" :transitionInterval="2000"
+                    :showThumbnails="false" :showItemNavigators="true">
                     <template #item="slotProps">
                         <div class="image-container">
                             <img :src="slotProps.item.src" :alt="slotProps.item.alt" style="width: 100%;" />
@@ -92,10 +68,10 @@ const responsiveOptions = ref([
                 </Galleria>
             </div>
 
-            <div style="grid-area: assemFiles;">
+            <div style="grid-area: assemblyFiles;" v-show="assemblyFiles?.length">
                 <h3 id="files-notes-title">Project Assembly Files</h3>
                 <div class="files-container">
-                    <div class="file-container" v-for="file in assemblyfiles" :key="file">
+                    <div class="file-container" v-for="file in assemblyFiles" :key="file">
                         <div class="info-line">
                             <p>Name:</p>
                             <p>{{ fileNameDivider(file).name }}</p>
@@ -104,14 +80,14 @@ const responsiveOptions = ref([
                             <p>File Type:</p>
                             <p>{{ fileNameDivider(file).extension }}</p>
                         </div>
-                        <div class="actions-constainer">
+                        <div class="actions-container">
                             <Button icon="pi pi-download" label="Download" @click="downloadProjectFile(file)" />
-                            <Button icon="pi pi-eye" label="Perview" @click="openFile(file)" />
+                            <Button icon="pi pi-eye" label="Preview" @click="openFile(file)" />
                         </div>
                     </div>
                 </div>
             </div>
-            <div style="grid-area: projFiles;">
+            <div style="grid-area: projFiles;" v-show="projectFiles?.length">
                 <h3 id="files-notes-title">Project Files</h3>
                 <div class="files-container">
                     <div class="file-container" v-for="file in projectFiles" :key="file">
@@ -123,7 +99,7 @@ const responsiveOptions = ref([
                             <p>File Type:</p>
                             <p>{{ fileNameDivider(file).extension }}</p>
                         </div>
-                        <div class="actions-constainer">
+                        <div class="actions-container">
                             <Button icon="pi pi-download" label="Download" @click="downloadProjectFile(file)" />
                         </div>
                     </div>
@@ -150,12 +126,9 @@ const responsiveOptions = ref([
 }
 
 #files-notes-wrapper {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
     gap: 1rem;
-    grid-template-areas:
-        "galaria assemFiles"
-        "projFiles projFiles";
+    display: flex;
+    flex-direction: column;
 }
 
 
@@ -185,21 +158,21 @@ const responsiveOptions = ref([
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-.files-container {
-    padding: 1rem;
+.files-container{
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
 }
-
 .file-container {
     padding: 1rem;
-    width: fit-content;
+    width: 20rem;
     max-width: 40rem;
     box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
     box-shadow: 0 0.125rem 0.125rem 0 rgba(0, 0, 0, 0.25);
     border-radius: 0.5rem 1rem 0.5rem 1rem;
 }
 
-.actions-constainer {
+.actions-container {
     width: 100%;
     display: flex;
     justify-content: end;
@@ -207,24 +180,8 @@ const responsiveOptions = ref([
     margin-top: 0.5rem;
 }
 
-.actions-constainer>button {
+.actions-container>button {
     font-size: 0.75rem;
 }
 
-@media screen and (max-width:1200px) {
-    #files-notes-wrapper {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-            "galaria"
-            "assemFiles"
-            "projFiles";
-    }
-
-    .files-container {
-        padding-block: 0px;
-    }
-    .file-container{
-        width: 100%;
-    }
-}
 </style>

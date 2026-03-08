@@ -1,32 +1,29 @@
 <script setup lang="ts">
 import SideBar from '@/components/general/SideBar.vue';
-import { apiHandle } from '@/services/apiService';
 import { computed, onMounted, ref } from 'vue'; import NavigationBar from '@/components/general/NavigationBar.vue';
 import ProjectCard from '@/components/project/ProjectCard.vue';
 import { useRoute } from 'vue-router';
 import LabCard from '@/components/lab/LabCard.vue';
+import { getUniversity, type DeepExpandedUniversity } from '@/services/apis/university.service';
+import type { LabModel } from '@/models/lab.model';
 
 const route = useRoute()
-const uniName = ref()
-const uniId = computed(() => route.params.id)
-const labs = ref<any[]>([])
+const university = ref<DeepExpandedUniversity>({})
 const projects = ref<any[]>([])
+const labs = computed(() => {
+    const uniqueLabs = new Set<LabModel>()
+
+    university.value.expand?.projects_via_universityId.forEach(proj => {
+        if (proj.expand?.labId) uniqueLabs.add(proj.expand?.labId)
+    })
+    return [...uniqueLabs]
+})
 
 onMounted(async () => {
-    const { success, data } = await apiHandle(`/api/collections/Uni_View/records/${uniId.value}`, 'GET', true)
-    if (!success || !data) return
-    uniName.value = data.Uni_Name
+    const universityRes = await getUniversity(route.params.id as string)
+    if (!universityRes.data) return
+    university.value = universityRes.data
 
-
-    const projectsId = data.Project_IDs as string[]
-    projectsId.forEach(id => {
-        apiHandle(`/api/collections/Project_View/records/${id}`, 'GET', true).then(pRes => projects.value.push(pRes.data))
-    })
-
-    const labsId = data.Lab_IDs as string[]
-    labsId.forEach(id => {
-        apiHandle(`/api/collections/Lab_View/records/${id}`, 'GET', true).then(lRes => labs.value.push(lRes.data))
-    })
 })
 
 </script>
@@ -36,7 +33,7 @@ onMounted(async () => {
     <div id="uni-info-container">
         <SideBar />
         <div id="uni-info-main">
-            <NavigationBar :pageName="uniName" />
+            <NavigationBar :pageName="university.name" />
             <div id="uni-info-main-body">
                 <div id="projects-container">
                     <h2 class="title">Projects</h2>
@@ -108,5 +105,4 @@ onMounted(async () => {
     gap: 1rem;
     flex-wrap: wrap;
 }
-
 </style>

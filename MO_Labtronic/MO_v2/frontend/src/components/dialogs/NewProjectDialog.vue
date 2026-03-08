@@ -2,15 +2,25 @@
 import { Dialog } from 'primevue';
 import { ref, onMounted } from 'vue';
 import Button from 'primevue/button';
-import { apiHandle } from '@/services/apiService';
-import { postEvent } from '@/utils/mediator';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
-import useUsersNames from '@/stores/usersNames';
 import DatePicker from 'primevue/datepicker';
+import { getUsers } from '@/services/apis/account.service';
+import type { Priority } from '@/types/mo-order';
+import { Toast, useToast } from 'primevue';
+import { getUniversities } from '@/services/apis/university.service';
+import type { UniversityModel } from '@/models/university.model';
+import type { LabModel } from '@/models/lab.model';
+import { getLabs } from '@/services/apis/lab.service';
+import type { AccountModel } from '@/models/account.model';
+import { createProject } from '@/services/apis/project.service';
+import { useRouter } from 'vue-router';
+import { syncDB } from '@/services/sql.service';
 
 const visible = defineModel<boolean>('visible')
 
+const router = useRouter()
+const toast = useToast()
 // --- Form Data Refs ---
 const projectName = ref('')
 const projectCode = ref('')
@@ -23,12 +33,12 @@ const projectPriority = ref()
 const projectEstDeadline = ref()
 
 // --- Dropdown Options ---
-const managers = ref<any[]>([])
-const designers = ref<any[]>([])
-const productions = ref<any[]>([])
-const universities = ref([])
-const labs = ref([])
-const priorities = ['HIGH', 'MEDIUM', 'LOW']
+const managers = ref<AccountModel[]>([])
+const designers = ref<AccountModel[]>([])
+const productions = ref<AccountModel[]>([])
+const universities = ref<UniversityModel[]>([])
+const labs = ref<LabModel[]>([])
+const priorities: Priority[] = ['HIGH', 'MEDIUM', 'LOW']
 
 // --- File Handling Refs ---
 const assemblyPics = ref<File[]>([])
@@ -71,32 +81,33 @@ async function addProject() {
 
     const formData = new FormData();
 
-    formData.append('Project_Name', projectName.value);
-    formData.append('Project_Code', projectCode.value);
-    
-    if (projectManager.value?.id) formData.append('Project_Manager', projectManager.value.id);
-    if (projectDesigner.value?.id) formData.append('Design_Engineer', projectDesigner.value.id);
-    if (projectProduction.value?.id) formData.append('Production_Engineer', projectProduction.value.id);
-    if (projectUniversity.value?.id) formData.append('University', projectUniversity.value.id);
-    if (projectLab.value?.id) formData.append('Lab', projectLab.value.id);
-    if (projectPriority.value) formData.append('Periority', projectPriority.value);
-    if (projectEstDeadline.value) formData.append('Est_Deadline', projectEstDeadline.value.toISOString())
+    formData.append('name', projectName.value);
+    formData.append('code', projectCode.value);
 
-    assemblyPics.value.forEach(file => formData.append('Assembly_Pic', file));
-    assemblyFiles.value.forEach(file => formData.append('Assembly_Files', file));
-    projectFiles.value.forEach(file => formData.append('Project_Files', file));
+    if (projectManager.value?.id) formData.append('projectManagerId', projectManager.value.id);
+    if (projectDesigner.value?.id) formData.append('designEngineersId', projectDesigner.value.id);
+    if (projectProduction.value?.id) formData.append('productionEngineersId', projectProduction.value.id);
+    if (projectUniversity.value?.id) formData.append('universityId', projectUniversity.value.id);
+    if (projectLab.value?.id) formData.append('labId', projectLab.value.id);
+    if (projectPriority.value) formData.append('priority', projectPriority.value);
+    if (projectEstDeadline.value) formData.append('estDeadline', projectEstDeadline.value.toISOString())
 
-    const res = await apiHandle('/api/collections/Projects_T/records', 'POST', true, '', formData,'data','form_data',null);
+    assemblyPics.value.forEach(file => formData.append('assemblyPics', file));
+    assemblyFiles.value.forEach(file => formData.append('assemblyFiles', file));
+    projectFiles.value.forEach(file => formData.append('projectFiles', file));
 
+    const res = await createProject(formData)
     if (res.success) {
-        postEvent('add_toast', {
+        toast.add({
             severity: 'success',
             summary: 'Success',
             detail: 'Project and files added successfully'
         })
         visible.value = false
+        await syncDB()
+    router.push(`/project-info/${res.data?.id}`)
     } else {
-        postEvent('add_toast', {
+        toast.add({
             severity: 'error',
             summary: 'Error',
             detail: 'There was an error during project creation'
@@ -105,60 +116,51 @@ async function addProject() {
 }
 
 onMounted(() => {
-    const _users = useUsersNames()
-    _users.getUsers().then((usersRes) => {
-        managers.value = usersRes?.filter(user => user.Role.includes('Project Manager')) || []
-        designers.value = usersRes?.filter(user => user.Role.includes('Design Engineer')) || []
-        productions.value = usersRes?.filter(user => user.Role.includes('Production Engineer')) || []
+    getUsers().then(res => {
+        const users = res.data?.items || []
+        managers.value = users?.filter(user => user?.roles?.includes('Project Manager')) || []
+        designers.value = users?.filter(user => user?.roles?.includes('Design Engineer')) || []
+        productions.value = users?.filter(user => user?.roles?.includes('Production Engineer')) || []
     })
-
-    apiHandle('/api/collections/Uni_View/records', 'GET', true, '?fields=id,Uni_Name').then(res => {
-        if (res.success)
+    getUniversities().then(res => {
+        if (res.data?.items)
             universities.value = res.data.items
     })
-    apiHandle('/api/collections/Lab_View/records', 'GET', true, '?fields=id,Lab_Name').then(res => {
-        if (res.success)
+    getLabs().then(res => {
+        if (res.data?.items)
             labs.value = res.data.items
     })
+
 })
 </script>
 
 <template>
+    <Toast />
     <Dialog v-model:visible="visible" modal header="Add New Project">
 
         <div class="add-project-container">
             <InputText v-model="projectName" placeholder="Project Name" />
             <InputText v-model="projectCode" placeholder="Project Code" />
 
-            <Select v-model="projectManager" :options="managers" optionLabel="Full_Name" placeholder="Project Manager" />
-            <Select v-model="projectDesigner" :options="designers" optionLabel="Full_Name" placeholder="Design Engineer" />
-            <Select v-model="projectProduction" :options="productions" optionLabel="Full_Name" placeholder="Production Engineer" />
+            <Select v-model="projectManager" :options="managers" optionLabel="userName" placeholder="Project Manager" />
+            <Select v-model="projectDesigner" :options="designers" optionLabel="userName"
+                placeholder="Design Engineer" />
+            <Select v-model="projectProduction" :options="productions" optionLabel="userName"
+                placeholder="Production Engineer" />
 
-            <Select v-model="projectUniversity" :options="universities" optionLabel="Uni_Name" placeholder="University" />
-            <Select v-model="projectLab" :options="labs" optionLabel="Lab_Name" placeholder="Lab" />
+            <Select v-model="projectUniversity" :options="universities" optionLabel="name" placeholder="University" />
+            <Select v-model="projectLab" :options="labs" optionLabel="name" placeholder="Lab" />
 
             <Select v-model="projectPriority" :options="priorities" placeholder="Priority" />
 
             <DatePicker v-model="projectEstDeadline" placeholder="Estimated Deadline" />
 
             <div>
-                <input 
-                    type="file" 
-                    ref="fileInputAssemblyPics" 
-                    class="hidden" 
-                    multiple 
-                    accept="image/*"
-                    @change="(e) => onFileSelect(e, assemblyPics)"
-                />
-                <Button 
-                    label="Add Assembly Pic" 
-                    icon="pi pi-images" 
-                    severity="secondary" 
-                    outlined 
-                    class="w-full"
-                    @click="triggerFileSelect(fileInputAssemblyPics)" 
-                />
-                
+                <input type="file" ref="fileInputAssemblyPics" class="hidden" multiple accept="image/*"
+                    @change="(e) => onFileSelect(e, assemblyPics)" />
+                <Button label="Add Assembly Pic" icon="pi pi-images" severity="secondary" outlined class="w-full"
+                    @click="triggerFileSelect(fileInputAssemblyPics)" />
+
                 <div v-if="assemblyPics.length > 0" class="file-list">
                     <div v-for="(file, index) in assemblyPics" :key="index" class="file-chip">
                         <span class="file-name">{{ file.name }}</span>
@@ -168,22 +170,11 @@ onMounted(() => {
             </div>
 
             <div>
-                <input 
-                    type="file" 
-                    ref="fileInputAssemblyFiles" 
-                    class="hidden" 
-                    multiple 
-                    @change="(e) => onFileSelect(e, assemblyFiles)"
-                />
-                <Button 
-                    label="Add Assembly File" 
-                    icon="pi pi-file" 
-                    severity="secondary" 
-                    outlined 
-                    class="w-full"
-                    @click="triggerFileSelect(fileInputAssemblyFiles)" 
-                />
-                
+                <input type="file" ref="fileInputAssemblyFiles" class="hidden" multiple
+                    @change="(e) => onFileSelect(e, assemblyFiles)" />
+                <Button label="Add Assembly File" icon="pi pi-file" severity="secondary" outlined class="w-full"
+                    @click="triggerFileSelect(fileInputAssemblyFiles)" />
+
                 <div v-if="assemblyFiles.length > 0" class="file-list">
                     <div v-for="(file, index) in assemblyFiles" :key="index" class="file-chip">
                         <span class="file-name">{{ file.name }}</span>
@@ -193,22 +184,11 @@ onMounted(() => {
             </div>
 
             <div>
-                <input 
-                    type="file" 
-                    ref="fileInputProjectFiles" 
-                    class="hidden" 
-                    multiple 
-                    @change="(e) => onFileSelect(e, projectFiles)"
-                />
-                <Button 
-                    label="Add Project File" 
-                    icon="pi pi-folder" 
-                    severity="secondary" 
-                    outlined 
-                    class="w-full"
-                    @click="triggerFileSelect(fileInputProjectFiles)" 
-                />
-                
+                <input type="file" ref="fileInputProjectFiles" class="hidden" multiple
+                    @change="(e) => onFileSelect(e, projectFiles)" />
+                <Button label="Add Project File" icon="pi pi-folder" severity="secondary" outlined class="w-full"
+                    @click="triggerFileSelect(fileInputProjectFiles)" />
+
                 <div v-if="projectFiles.length > 0" class="file-list">
                     <div v-for="(file, index) in projectFiles" :key="index" class="file-chip">
                         <span class="file-name">{{ file.name }}</span>
@@ -217,14 +197,15 @@ onMounted(() => {
                 </div>
             </div>
 
-            <Button @click="addProject" label="Add" icon="pi pi-plus" style="width: 6rem; align-self: flex-end; margin-top: 1rem;" />
+            <Button @click="addProject" label="Add" icon="pi pi-plus"
+                style="width: 6rem; align-self: flex-end; margin-top: 1rem;" />
         </div>
     </Dialog>
 </template>
 
 <style scoped>
 .add-project-container {
-    width: 32rem; 
+    width: 32rem;
     display: grid;
     flex-direction: column;
     gap: 1rem;
@@ -241,7 +222,8 @@ onMounted(() => {
     gap: 0.5rem;
     margin-top: 0.5rem;
     padding: 0.5rem;
-    background-color: #f8f9fa; /* Light gray background */
+    background-color: #f8f9fa;
+    /* Light gray background */
     border-radius: 6px;
 }
 
@@ -267,7 +249,8 @@ onMounted(() => {
 
 .remove-icon {
     font-size: 0.75rem;
-    color: #ef4444; /* Red color */
+    color: #ef4444;
+    /* Red color */
     cursor: pointer;
 }
 

@@ -1,32 +1,27 @@
 <script setup lang="ts">
 import SideBar from '@/components/general/SideBar.vue';
-import { apiHandle } from '@/services/apiService';
+import { getLab, type DeepExpandedLab } from '@/services/apis/lab.service';
 import { computed, onMounted, ref } from 'vue'; import NavigationBar from '@/components/general/NavigationBar.vue';
 import ProjectCard from '@/components/project/ProjectCard.vue';
 import { useRoute } from 'vue-router';
 import UniCard from '@/components/university/UniCard.vue';
+import type { UniversityModel } from '@/models/university.model';
 
 const route = useRoute()
-const labName = ref()
-const labId = computed(() => route.params.id)
-const unis = ref<any[]>([])
-const projects = ref<any[]>([])
+const lab = ref<DeepExpandedLab>({})
+const unis = computed(() => {
+    const uniqueUnis = new Set<UniversityModel>()
+
+    lab.value.expand?.projects_via_labId.forEach(proj => {
+        if (proj.expand?.universityId) uniqueUnis.add(proj.expand?.universityId)
+    })
+    return [...uniqueUnis]
+})
 
 onMounted(async () => {
-    const { success, data } = await apiHandle(`/api/collections/Lab_View/records/${labId.value}`, 'GET', true)
-    if (!success || !data) return
-    labName.value = data.Lab_Name
-
-
-    const projectsId = data.Project_IDs as string[]
-    projectsId.forEach(id => {
-        apiHandle(`/api/collections/Project_View/records/${id}`, 'GET', true).then(pRes => projects.value.push(pRes.data))
-    })
-
-    const unisId = data.Uni_IDs as string[]
-    unisId.forEach(id => {
-        apiHandle(`/api/collections/Uni_View/records/${id}`, 'GET', true).then(uRes => unis.value.push(uRes.data))
-    })
+    const labRes = await getLab(route.params.id as string)
+    if (!labRes.data) return  
+    lab.value = labRes.data
 })
 
 </script>
@@ -36,13 +31,13 @@ onMounted(async () => {
     <div id="lab-info-container">
         <SideBar />
         <div id="lab-info-main">
-            <NavigationBar :pageName="labName" />
+            <NavigationBar :pageName="lab.name" />
             <div id="lab-info-main-body">
                 <div id="projects-container">
                     <h2 class="title">Projects</h2>
 
                     <div id="projects-wrapper">
-                        <ProjectCard v-for="prj, i in projects" :key="i" :projectData="prj" />
+                        <ProjectCard v-for="prj, i in lab.expand?.projects_via_labId" :key="i" :projectData="prj" />
                     </div>
                 </div>
 
@@ -108,5 +103,4 @@ onMounted(async () => {
     gap: 1rem;
     flex-wrap: wrap;
 }
-
 </style>

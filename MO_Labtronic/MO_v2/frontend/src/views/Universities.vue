@@ -3,32 +3,28 @@ import SideBar from '@/components/general/SideBar.vue';
 import NavigationBar from '@/components/general/NavigationBar.vue';
 import { useRouter } from 'vue-router';
 import { onMounted, ref, watch, computed, TransitionGroup } from 'vue';
-import { apiHandle } from '@/services/apiService';
 import { InputText } from 'primevue';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import { Searcher } from 'fast-fuzzy';
 import Button from 'primevue/button';
-import { syncDB } from '@/services/sqlService';
+import { syncDB } from '@/services/sql.service';
 import NewUniDialog from '@/components/dialogs/NewUniDialog.vue';
 import UniCard from '@/components/university/UniCard.vue';
+import { getUniversities, type DeepExpandedUniversity } from '@/services/apis/university.service';
+
 
 const router = useRouter()
-const unis = ref<any[]>([])
+const unis = ref<DeepExpandedUniversity[]>([])
 
 
 const showDialog = ref(false)
 
 onMounted(async () => {
-    const uniPromise = apiHandle('/api/collections/Uni_View/records', 'GET', true,)
-
-    const [uniRes] = await Promise.all([
-
-        uniPromise,
-    ]);
-    if (!(uniRes && uniRes.success))
+    const uniRes = await getUniversities()
+    if (!uniRes.data)
         return
-    unis.value = uniRes.data.items as any[]
+    unis.value = uniRes.data.items
 })
 const search = ref('')
 

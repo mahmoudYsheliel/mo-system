@@ -3,12 +3,11 @@ import Dialog from 'primevue/dialog';
 import { Button } from 'primevue';
 import { DatePicker } from 'primevue';
 import { computed, ref } from 'vue';
-import { postEvent } from '@/utils/mediator';
-import { apiHandle } from '@/services/apiService';
-
+import {Toast,useToast} from 'primevue';
 import { useRoute } from 'vue-router';
+import { setEstDate } from '@/services/apis/mo.service';
 
-
+const toast = useToast()
 const route = useRoute()
 const visible = defineModel<boolean>('visible')
 const selectedDate = ref()
@@ -17,16 +16,16 @@ const moId = computed(() => route.params.id)
 async function setEndDate() {
     if (!selectedDate.value)
         return
-    const res = await apiHandle(`/api/collections/MO_T/records/${moId.value}`, 'PATCH', true, '', { Est_Deadline: selectedDate.value })
+    const res = await setEstDate(moId.value as string, selectedDate.value )
     if (res.success) {
-        postEvent('add_toast', {
+        toast.add({
             severity: 'success',
             summary: 'Updated Successfully',
             detail: `Estimated End date has been updated successfully`
         })
     }
     else {
-        postEvent('add_toast', {
+        toast.add({
             severity: 'error',
             summary: 'Failed to Update',
             detail: 'Estimated End date could not be updated successfully'
@@ -37,6 +36,7 @@ async function setEndDate() {
 </script>
 
 <template>
+    <Toast />
     <Dialog v-model:visible="visible" modal header="Select MO End Date">
         <div class="set-end-date-container">
             <div class="label-date-element">
