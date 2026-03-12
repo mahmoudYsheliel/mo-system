@@ -6,6 +6,7 @@ export interface AccountModel {
     passwordConfirm?: string,
     password?: string,
     tokenKey?: string
+    pushAlertSubscriberId?: string
     email?: string
     emailVisibility?: string
     userName?: string

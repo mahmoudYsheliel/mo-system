@@ -74,19 +74,29 @@ async function reloadMo(note?: string) {
     const res = await getMO(moId)
     const expandedMo = res.data
     if (!expandedMo) return;
+    if (note) {
+        createNotification({ mo: expandedMo, notificationType: 'mo_note', addedNote: note })
+        return
+    }
     const newProcesses = expandedMo.expand?.parts_via_moId?.flatMap(part => part.expand?.processes_via_partId || []) ?? [];
-    if(checkProcessRejectionUpdate(newProcesses)) createNotification({ mo: expandedMo, notificationType: 'process_rejected' })
-    mo.value = expandedMo
+    if (checkProcessRejectionUpdate(newProcesses)) {
+        createNotification({ mo: expandedMo, notificationType: 'process_rejected' })
+        mo.value = expandedMo
+        return
+    }
 
-    if (note) createNotification({ mo: expandedMo, notificationType: 'mo_note', addedNote: note })
-    if (expandedMo.completionPercentage === 100) createNotification({ mo: expandedMo, notificationType: 'mo_completed' })
+    if (expandedMo.completionPercentage === 100 && mo.value?.completionPercentage!=100) {
+        createNotification({ mo: expandedMo, notificationType: 'mo_completed' })
+        mo.value = expandedMo
+        return
+    }
 
 }
-function checkProcessRejectionUpdate(newProcesses: ProcessModel[]):Boolean {
+function checkProcessRejectionUpdate(newProcesses: ProcessModel[]): Boolean {
     const oldProcesses = mo.value?.expand?.parts_via_moId?.flatMap(part => part.expand?.processes_via_partId || []) ?? []
     for (const oldP of oldProcesses) {
         if (oldP.status == 'Rejected') continue
-            const newStatus = newProcesses.find(newP => newP.id === oldP.id)?.status
+        const newStatus = newProcesses.find(newP => newP.id === oldP.id)?.status
         if (newStatus == 'Rejected') return true
     }
     return false
@@ -109,35 +119,27 @@ function checkProcessRejectionUpdate(newProcesses: ProcessModel[]):Boolean {
                     <Chip v-if="mo?.priority" :bg="priorityColor[mo.priority]" :label="mo.priority" />
                     <Chip v-if="mo?.status" :bg="moStatusColorMap[mo.status]" :label="mo.status" />
 
-                    <Chip v-if="mo?.expand?.projectId?.expand?.projectManagerId?.userName"
-                        :label="mo?.expand?.projectId?.expand?.projectManagerId?.userName"
-                        :bg="MORepresentativeColors['Project Manager']" />
+                    <Chip v-if="mo?.expand?.projectId?.expand?.projectManagerId?.userName" :label="mo?.expand?.projectId?.expand?.projectManagerId?.userName" :bg="MORepresentativeColors['Project Manager']" />
 
-                    <Chip v-if="mo?.expand?.projectId?.expand?.designEngineersId?.[0]"
-                        :label="mo.expand.projectId.expand.designEngineersId[0].userName"
-                        :bg="MORepresentativeColors['Design Engineer']" />
+                    <Chip v-if="mo?.expand?.projectId?.expand?.designEngineersId?.[0]" :label="mo.expand.projectId.expand.designEngineersId[0].userName" :bg="MORepresentativeColors['Design Engineer']" />
 
-                    <Chip v-if="mo?.expand?.productionEngineer" :label="mo?.expand?.productionEngineer.userName"
-                        :bg="MORepresentativeColors['Production Engineer']" />
+                    <Chip v-if="mo?.expand?.productionEngineer" :label="mo?.expand?.productionEngineer.userName" :bg="MORepresentativeColors['Production Engineer']" />
 
                 </div>
 
-                <MODates :startDate="MODatesObj.start" :estDate="MODatesObj.estimated" :finDate="MODatesObj.finish"
-                    id="mo-dates" />
+                <MODates :startDate="MODatesObj.start" :estDate="MODatesObj.estimated" :finDate="MODatesObj.finish" id="mo-dates" />
                 <div class="mo-info-section-container">
                     <Notes :notes="mo?.expand?.notes_via_moId" @noteSent="(note) => reloadMo(note)" :moId="mo?.id" />
                 </div>
                 <div class="mo-info-section-container" v-show="mo?.expand?.mo_files_via_moId">
-                    <MOFiles :projectName="mo?.expand?.projectId?.name" :MOName="mo?.name" :MOId="mo?.id"
-                        :files="mo?.expand?.mo_files_via_moId" />
+                    <MOFiles :projectName="mo?.expand?.projectId?.name" :MOName="mo?.name" :MOId="mo?.id" :files="mo?.expand?.mo_files_via_moId" />
                 </div>
                 <div class="mo-info-section-container">
                     <MOParts :originalParts="mo?.expand?.parts_via_moId" @updateProcesses="reloadMo()" />
                 </div>
             </div>
         </div>
-        <Button v-if="isDesigner || isMoProduction" @click="selectPEngDialog = !selectPEngDialog;"
-            class="change-eng-btn" label="Change Production Eng" />
+        <Button v-if="isDesigner || isMoProduction" @click="selectPEngDialog = !selectPEngDialog;" class="change-eng-btn" label="Change Production Eng" />
     </div>
 
 </template>

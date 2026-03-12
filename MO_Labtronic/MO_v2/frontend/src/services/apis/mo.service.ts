@@ -65,12 +65,14 @@ export function computeMODerivedProperties(mo?: DeepExpandedMO) {
     mo.completionPercentage = 100;
     return;
   }
-  const totalProcesses = moParts.flatMap(
+  moParts.forEach(part=>{
+    if(!part.color) part.color = 'No Color'
+  })
+  const allProcesses = moParts.flatMap(
     (part) => part.expand?.processes_via_partId || [],
-  ).length;
-  const procFinished = moParts
-    .flatMap((part) => part.expand?.processes_via_partId || [])
-    .filter((proc) => proc.status == "Done").length;
+  )
+  const totalProcesses = allProcesses.length;
+  const procFinished = allProcesses.filter((proc) => proc.status == "Done").length;
   mo.completionPercentage =
     totalProcesses !== 0
       ? Math.round((procFinished / totalProcesses) * 100)

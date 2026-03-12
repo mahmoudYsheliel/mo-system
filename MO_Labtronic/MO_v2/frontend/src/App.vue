@@ -2,6 +2,28 @@
 import "primeicons/primeicons.css";
 import { RouterView } from "vue-router";
 import { ConfirmDialog } from "primevue";
+import { onMounted } from "vue";
+import type { PushalertOnSuccessModel } from "./models/pushalert-onsuccess.model";
+import { checkSubscriberId } from "./services/apis/account.service";
+import { setPushAlertSubscriberId } from "./services/user.service";
+
+
+
+
+onMounted(() => {
+  if (!(window as any).pushalertbyiw) { console.log('no web push'); return }
+  (window as any).pushalertbyiw.push(['onSuccess', function (result: any) {
+    const res = result as PushalertOnSuccessModel
+    console.log({ res })
+    if (res.success) {
+      setPushAlertSubscriberId(res.subscriber_id)
+      checkSubscriberId(res.subscriber_id)
+    }
+  }]);
+})
+
+
+
 </script>
 
 <template>
@@ -15,9 +37,11 @@ import { ConfirmDialog } from "primevue";
 * {
   margin: 0;
 }
+
 i {
   position: relative;
 }
+
 html,
 body {
   margin: 0;
@@ -36,6 +60,7 @@ body {
     font-size: 14px;
   }
 }
+
 @media (max-width: 425px) {
   :root {
     font-size: 12px;

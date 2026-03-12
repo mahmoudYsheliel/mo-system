@@ -23,7 +23,7 @@ const dataObject = computed(() => {
         {
             com: ThicknessIcon,
             type: 'Thickness',
-            val: pros?.part.thickness + 'mm'
+            val: pros?.part.thickness 
         },
         {
             com: ColorIcon,

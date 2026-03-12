@@ -2,7 +2,7 @@
 import { useRoute } from 'vue-router';
 import { getFileLink } from '@/lib/helper-functions';
 import { downloadFile } from '@/services/download.service';
-import Galleria from 'primevue/galleria';
+import { Image } from 'primevue';
 import { ref, watch } from 'vue';
 import Button from 'primevue/button';
 
@@ -13,7 +13,7 @@ const props = defineProps<{
 }>()
 const route = useRoute()
 const projectId = route.params.id as string
-const images = ref<{ src: string | undefined, alt: string }[]>([])
+const images = ref<string[]>([])
 
 function getProjectFileLink(fileName: string) {
     return getFileLink('projects', projectId, fileName)
@@ -29,13 +29,12 @@ function fileNameDivider(fileName: string) {
     }
 }
 watch(props, () => {
-    if (props.assemblyPics)
-        images.value = props.assemblyPics?.map((ap: string) => {
-            return {
-                src: getProjectFileLink(ap),
-                alt: "Image Not Found"
-            }
+    if (props.assemblyPics) {
+        const imagesMap = props.assemblyPics?.map((ap: string) => {
+            return getProjectFileLink(ap)
         })
+        images.value = imagesMap.filter((imgMap): imgMap is string  =>typeof imgMap === 'string' &&  imgMap.trim() !== "")
+    }
 })
 
 function openFile(fileName: string) {
@@ -54,18 +53,9 @@ function openFile(fileName: string) {
 
             <div style="grid-area: galleria;" class="project-images" v-show="images.length">
                 <h3 id="files-notes-title">Project Images</h3>
-                <Galleria :value="images" :numVisible="4" circular :autoPlay="true" :transitionInterval="2000"
-                    :showThumbnails="false" :showItemNavigators="true">
-                    <template #item="slotProps">
-                        <div class="image-container">
-                            <img :src="slotProps.item.src" :alt="slotProps.item.alt" style="width: 100%;" />
-
-                        </div>
-                    </template>
-                    <template #thumbnail="slotProps">
-                        <img :src="slotProps.item.src" :alt="slotProps.item.alt" style="width: 80%;" />
-                    </template>
-                </Galleria>
+                <div class="project-images-container">
+                    <Image v-for="image in images" :src="image" preview height="100" />
+                </div>
             </div>
 
             <div style="grid-area: assemblyFiles;" v-show="assemblyFiles?.length">
@@ -131,18 +121,12 @@ function openFile(fileName: string) {
     flex-direction: column;
 }
 
-
-.image-container {
-    height: 20rem;
-    overflow: hidden;
+.project-images-container{
+    display:  flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
-.image-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    /* image fits inside container */
-}
 
 .info-line {
     display: grid;
@@ -158,11 +142,13 @@ function openFile(fileName: string) {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.files-container{
+
+.files-container {
     width: 100%;
     display: flex;
     gap: 0.5rem;
 }
+
 .file-container {
     padding: 1rem;
     width: 20rem;
@@ -183,5 +169,4 @@ function openFile(fileName: string) {
 .actions-container>button {
     font-size: 0.75rem;
 }
-
 </style>

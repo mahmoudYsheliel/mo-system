@@ -5,17 +5,24 @@ import OverlayBadge from 'primevue/overlaybadge';
 import Popover from 'primevue/popover';
 import { Button } from 'primevue';
 import NotificationCardSmall from '../notification/NotificationCardSmall.vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
+import { batchMarkNotificationsRead } from '@/services/apis/mo-notification.service';
+import { getUser } from '@/services/user.service';
+import { subscribeToPushAlert } from '@/services/pushalert.service';
 
-const allowNotificationComputed = ref(Notification.permission === "granted");
+const allowNotificationComputed = ref<Boolean>(Notification.permission === "granted" && !!getUser()?.pushAlertSubscriberId);
 const notificationPopover = ref();
 const notReadNotificationsCount = ref<number | undefined>()
 const toggleNotification = (event: MouseEvent) => {
     notificationPopover.value.toggle(event);
 };
 async function requestAllowNotification() {
+    subscribeToPushAlert((inp) => {
+        console.log(1)
+        console.log(inp)
+    })
     const perm = await Notification.requestPermission();
-    allowNotificationComputed.value = perm === "granted";
+    allowNotificationComputed.value = (perm === "granted" && !!getUser()?.pushAlertSubscriberId)
 }
 const items = ref<ExpandedMONotification[]>([])
 
@@ -29,9 +36,15 @@ onMounted(async () => {
 
 
 const router = useRouter()
-function notificationNavigate(){
+function notificationNavigate() {
     router.push('/notification')
 }
+async function markAllRead() {
+    await batchMarkNotificationsRead()
+    window.location.reload()
+}
+
+
 </script>
 
 
@@ -43,15 +56,15 @@ function notificationNavigate(){
         <i v-else class="pi pi-bell" @click="toggleNotification" aria-haspopup="true" aria-controls="overlay_menu"></i>
 
         <Popover ref="notificationPopover">
-                <div class="main-menu">
-                    <div style="margin-bottom: 0.5rem;" v-for="item in items">
-                        <NotificationCardSmall :notification="item" />
-                    </div>
+            <div class="main-menu">
+                <div style="margin-bottom: 0.5rem;" v-for="item in items">
+                    <NotificationCardSmall :notification="item" />
                 </div>
-                <div class="notification-menu-end">
-                    <Button label="Mark All Read" size="small" />
-                    <Button label="See All" size="small" @click="notificationNavigate()" />
-                </div>
+            </div>
+            <div class="notification-menu-end">
+                <Button label="Mark All Read" size="small" @click="markAllRead()" />
+                <Button label="See All" size="small" @click="notificationNavigate();" />
+            </div>
 
         </Popover>
 

@@ -9,6 +9,8 @@ import {
   generateNotification,
   type NotificationEvent,
 } from "@/lib/generate-notification";
+import type { BatchResponseModel } from "@/models/batch-response.model";
+import { sendPushAlertNotification } from "./pushalert.service";
 
 const moNotificationEndPoint = "/api/collections/mo_notifications/records";
 
@@ -43,6 +45,7 @@ export async function createNotification(
       `${moNotificationEndPoint}`,
       notification,
     );
+    sendPushAlertNotification(notification)
     return notificationRes;
   } catch (error) {
     console.error("Failed to add notification: ", error);
@@ -62,7 +65,7 @@ export async function getUserNotification(): Promise<
     >(`${moNotificationEndPoint}`, {
       filter: filter,
       expand: expansions.join(","),
-      sort:'-created'
+      sort: '-created'
     });
 
     computeNotificationDerivedProperties(notificationRes.data?.items);
@@ -94,6 +97,37 @@ export async function markNotificationSeen(
     return moNotificationRes;
   } catch (error) {
     console.error("Failed to update MO data:", error);
+    throw error;
+  }
+}
+
+
+
+
+export async function batchMarkNotificationsRead(
+): Promise<ReturnMessage<BatchResponseModel[]>> {
+  try {
+    const userId = getUser()?.id
+    const notifications =  (await getUserNotification()).data?.items
+    if (!notifications || !userId) return {
+      success: false,
+      msg: 'Failed to fetch user notifications'
+    }
+    const batchEndPoint = "/api/batch";
+    const requests = notifications.map((notification) => {
+      const seenBy = notification.seenBy ? [...notification.seenBy,userId] : [userId]
+      return {
+        method: "PATCH",
+        url: `${moNotificationEndPoint}/${notification.id}`,
+        body: {seenBy},
+      };
+    });
+    const batchRes = ApiService.post<BatchResponseModel[]>(batchEndPoint, {
+      requests,
+    });
+    return batchRes;
+  } catch (error) {
+    console.error("Failed to update notifications: ", error);
     throw error;
   }
 }
