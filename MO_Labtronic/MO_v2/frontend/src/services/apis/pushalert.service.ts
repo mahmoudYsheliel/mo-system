@@ -83,3 +83,42 @@ function getDefaultTitle(type?: NotificationType): string {
         default: return "New System Notification";
     }
 }
+
+
+
+
+
+
+
+
+
+async function sendNotification (body:any) {
+    const apiKey = '258fce9f345a0588f5962c9b52f096cc';
+    const frontendPayload = body;
+
+    const params = new URLSearchParams();
+    
+    for (const key in frontendPayload) {
+        if (Array.isArray(frontendPayload[key]) || typeof frontendPayload[key] === 'object') {
+            params.append(key, JSON.stringify(frontendPayload[key]));
+        } else {
+            params.append(key, frontendPayload[key]);
+        }
+    }
+
+    try {
+        const pushResponse = await fetch("https://api.pushalert.co/rest/v1/send", {
+            method: "POST",
+            headers: {
+                "Authorization": `api_key=${apiKey}`,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: params.toString()
+        });
+
+        const data = await pushResponse.json();
+        console.log(data)
+    } catch (error:any) {
+        console.error("Proxy forwarding failed:", error.message);
+    }
+}
