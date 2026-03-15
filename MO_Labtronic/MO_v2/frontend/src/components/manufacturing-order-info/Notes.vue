@@ -88,7 +88,7 @@ function sendNote() {
 }
 
 function getNoteClass(note: NoteModel) {
-    return note.userId === currentUserId ? 'note-first-user' : 'note-second-user'
+    return note.userId !== currentUserId ? 'note-first-user' : 'note-second-user'
 }
 
 </script>

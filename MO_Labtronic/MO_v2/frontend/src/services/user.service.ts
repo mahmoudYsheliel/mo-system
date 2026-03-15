@@ -5,7 +5,7 @@ import { ApiService } from "@/services/api.service";
 import { checkSubscriberId } from "./apis/account.service";
 
 const loginEndPoint = "/api/collections/accounts/auth-with-password";
-
+const refreshTokenEndPoint = '/api/collections/accounts/auth-refresh'
 
 export function setToken(newToken: string | null) {
   if (newToken) localStorage.setItem("token", newToken);
@@ -38,11 +38,44 @@ export function getPushAlertSubscriberId(): string | null {
   return pushAlertSubscriberIdLocalStorage ? JSON.parse(pushAlertSubscriberIdLocalStorage) : null;
 }
 
+export function isTokenValid(token:string) {
+    if (!token) return false;
+
+    try {
+        const payloadBase64 = token.split('.')[1];
+        if(!payloadBase64) return false
+        const decodedJson = atob(payloadBase64);
+        const payload = JSON.parse(decodedJson);
+        const currentTime = Math.floor(Date.now() / 1000);
+        return payload.exp > currentTime;
+    } catch (error) {
+        return false; 
+    }
+}
+
+export async function refreshToken(): Promise<ReturnMessage<AuthWithPassModel>> {
+  try {
+    const res = await ApiService.post<AuthWithPassModel>(refreshTokenEndPoint, {});
+
+    if (res.success && res.data) {
+      setToken(res.data.token);
+      setUser(res.data.record);
+      const pushAlertSubscriberId = getPushAlertSubscriberId()
+      if(pushAlertSubscriberId) checkSubscriberId(pushAlertSubscriberId)
+    }
+    return res;
+  } catch (err: unknown) {
+    return {
+      success: false,
+      msg: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
 
 export async function login(
   email: string,
   pass: string,
-): Promise<ReturnMessage> {
+): Promise<ReturnMessage<AuthWithPassModel>> {
   try {
     const res = await ApiService.post<AuthWithPassModel>(loginEndPoint, {
       identity: email,
@@ -60,7 +93,6 @@ export async function login(
     return {
       success: false,
       msg: err instanceof Error ? err.message : String(err),
-      data: null,
     };
   }
 }

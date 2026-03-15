@@ -1,4 +1,4 @@
-import { getToken } from "./user.service";
+import { getToken, isTokenValid, logout } from "./user.service";
 import { type ApiOptions } from "@/types/api-options";
 import {
   type PbErrorResponse,
@@ -36,6 +36,9 @@ export class ApiService {
       const headers = new Headers(customHeaders);
       if (auth) {
         const token = getToken();
+        if (token && !isTokenValid(token)) { // if auth required and there is an invalid token, we need to log in 
+          logout();
+        }
         if (token) headers.set("Authorization", token);
       }
       let body: any = undefined;

@@ -76,6 +76,7 @@ async function reloadMo(note?: string) {
     if (!expandedMo) return;
     if (note) {
         createNotification({ mo: expandedMo, notificationType: 'mo_note', addedNote: note })
+        mo.value = expandedMo
         return
     }
     const newProcesses = expandedMo.expand?.parts_via_moId?.flatMap(part => part.expand?.processes_via_partId || []) ?? [];

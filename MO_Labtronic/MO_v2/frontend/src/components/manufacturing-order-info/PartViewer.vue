@@ -3,6 +3,7 @@ import CodeIcon from "@/icons/CodeIcon.vue";
 import ThicknessIcon from "@/icons/ThicknessIcon.vue";
 import ColorIcon from "@/icons/ColorIcon.vue";
 import MaterialTypeIcon from "@/icons/MaterialTypeIcon.vue";
+import DimensionIcon from "@/icons/DimensionIcon.vue";
 import CountIcon from "@/icons/CountIcon.vue";
 import StatusMenu from "./StatusMenu.vue";
 import "primeicons/primeicons.css";
@@ -23,7 +24,12 @@ const dataObject = computed(() => {
         {
             com: ThicknessIcon,
             type: 'Thickness',
-            val: pros?.part.thickness 
+            val: pros?.part.thickness
+        },
+        {
+            com: DimensionIcon,
+            type: 'Dimension',
+            val: pros?.part.dim
         },
         {
             com: ColorIcon,

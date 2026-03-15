@@ -24,13 +24,14 @@ const props = defineProps({
 <style scoped>
 .chip-container {
     padding: 0.5rem 1rem;
-    width: fit-content;
+    width: max-content;
     font-size: 0.8rem;
     font-weight: bolder;
     border-radius: 2rem;
     display: flex;
     gap: 0.25rem;
     align-items: center;
+    text-wrap: nowrap;
 }
 
 p {

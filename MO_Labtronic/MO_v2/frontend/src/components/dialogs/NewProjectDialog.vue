@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { Dialog } from 'primevue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
-import Select from 'primevue/select';
+import Select, { type SelectChangeEvent } from 'primevue/select';
 import DatePicker from 'primevue/datepicker';
 import { getUsers } from '@/services/apis/account.service';
 import type { Priority } from '@/types/mo-order';
@@ -24,11 +24,12 @@ const toast = useToast()
 // --- Form Data Refs ---
 const projectName = ref('')
 const projectCode = ref('')
+const projectCodeWithLabCode = ref('')
 const projectManager = ref()
 const projectDesigner = ref()
 const projectProduction = ref()
-const projectUniversity = ref()
-const projectLab = ref()
+const projectUniversity = ref<UniversityModel>({})
+const projectLab = ref<LabModel>({})
 const projectPriority = ref()
 const projectEstDeadline = ref()
 
@@ -115,6 +116,10 @@ async function addProject() {
     }
 }
 
+function getProjectCodePrefix(){
+    return projectLab.value?.code ? `${projectLab.value.code} - ` : ''
+ }
+
 onMounted(() => {
     getUsers().then(res => {
         const users = res.data?.items || []
@@ -130,8 +135,14 @@ onMounted(() => {
         if (res.data?.items)
             labs.value = res.data.items
     })
-
 })
+
+const updateProjectCode = (event:SelectChangeEvent) => {
+    const newPrefix = event.value as LabModel;
+    const oldCodeSections = projectCode.value.split('-')
+    const oldCode = oldCodeSections[1] || oldCodeSections[0] 
+    projectCode.value = `${newPrefix.code}-${oldCode}`;
+};
 </script>
 
 <template>
@@ -149,7 +160,7 @@ onMounted(() => {
                 placeholder="Production Engineer" />
 
             <Select v-model="projectUniversity" :options="universities" optionLabel="name" placeholder="University" />
-            <Select v-model="projectLab" :options="labs" optionLabel="name" placeholder="Lab" />
+            <Select v-model="projectLab" :options="labs" optionLabel="name" placeholder="Lab" @change="updateProjectCode" />
 
             <Select v-model="projectPriority" :options="priorities" placeholder="Priority" />
 
