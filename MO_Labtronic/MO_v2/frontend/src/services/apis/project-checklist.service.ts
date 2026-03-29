@@ -26,3 +26,13 @@ export async function batchUpdateCheckList(
     throw error;
   }
 }
+
+export async function addChecklistItem(item: ProjectCheckListModel):Promise<ReturnMessage<ProjectCheckListModel>> {
+  try {
+    const itemRes = await ApiService.post<ProjectCheckListModel>(projectChecklistEndPoint,item)
+    return itemRes
+  } catch (error) {
+    console.error("Failed to update checks: ", error);
+    throw error;
+  }
+}

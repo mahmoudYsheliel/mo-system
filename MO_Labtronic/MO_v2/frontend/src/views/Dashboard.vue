@@ -4,12 +4,17 @@ import NavigationBar from '@/components/general/NavigationBar.vue';
 import SummaryCard from '@/components/dashboard/SummaryCard.vue';
 import MOCard from '@/components/dashboard/MOCard.vue';
 import { useRouter } from 'vue-router';
-import { onMounted, ref, shallowRef, TransitionGroup } from 'vue';
+import { onMounted, ref, shallowRef, TransitionGroup, watch } from 'vue';
 import { type MOSummaryStatus } from '@/types/mo-order';
 import { summaryCardsConf } from '@/lib/build-summary-card-data';
-import { getMOs } from '@/services/apis/mo.service';
+import { getMOs, getMyMOs } from '@/services/apis/mo.service';
 import { Skeleton } from 'primevue';
 import type { DeepExpandedMO } from '@/services/apis/mo.service';
+import SelectButton from 'primevue/selectbutton';
+
+const moFilterType = ref(['All MOs', 'My MOs'])
+const selectedMoFilterType = ref<string | undefined>(undefined)
+
 
 const router = useRouter()
 const summaryData = shallowRef(summaryCardsConf)
@@ -17,9 +22,16 @@ const mos = ref<Record<MOSummaryStatus, DeepExpandedMO[]>>({ 'Not Started': [], 
 const selectedMOStatus = ref<MOSummaryStatus>('Total')
 const isMOViewLoading = ref(true)
 onMounted(async () => {
-    const moRes = await getMOs()
+    selectedMoFilterType.value = 'All MOs'
+})
+
+watch(selectedMoFilterType, async () => {
+    isMOViewLoading.value = true
+    mos.value = { 'Not Started': [], 'Active': [], 'Completed': [], 'Total': [] }
+    const moRes = await (selectedMoFilterType.value === 'All MOs' ? getMOs() : getMyMOs())
     if (!moRes.data)
         return
+
 
     const expandedMos = moRes.data.items
     expandedMos.forEach(mo => {
@@ -30,11 +42,13 @@ onMounted(async () => {
             case 'Not Started': mos.value['Not Started'].push(mo); break;
         }
     })
+
     summaryData.value.Active.count = mos.value.Active.length
     summaryData.value.Completed.count = mos.value.Completed.length
     summaryData.value['Not Started'].count = mos.value['Not Started'].length
     summaryData.value.Total.count = mos.value.Total.length
     isMOViewLoading.value = false
+
 })
 
 
@@ -45,6 +59,11 @@ onMounted(async () => {
         <SideBar selectedPage="Dashboard" />
         <div id="dashboard-main-container">
             <NavigationBar pageName="Dashboard" />
+            <div id="dashboard-select-button-container">
+                <SelectButton v-model="selectedMoFilterType" :options="moFilterType" />
+
+            </div>
+
             <div id="summary-cards-container">
                 <SummaryCard v-for="(summaryCard, title) in summaryData" :key="title" :summaryData="summaryCard"
                     :isLoading="isMOViewLoading" :isSelected="selectedMOStatus == title" :title="title"
@@ -77,6 +96,13 @@ onMounted(async () => {
     overflow: auto;
 }
 
+#dashboard-select-button-container {
+    width: 100%;
+    margin-block: 0.5rem;
+    display: flex;
+    justify-content: center;
+}
+
 #summary-cards-container {
     display: flex;
     justify-content: space-around;
@@ -94,7 +120,7 @@ onMounted(async () => {
 
 .list-enter-active,
 .list-leave-active {
-    transition: all 0.5s ease;
+    transition: all 0.25s ease;
 }
 
 .list-enter-from,

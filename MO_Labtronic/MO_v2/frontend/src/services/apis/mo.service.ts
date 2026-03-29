@@ -65,14 +65,16 @@ export function computeMODerivedProperties(mo?: DeepExpandedMO) {
     mo.completionPercentage = 100;
     return;
   }
-  moParts.forEach(part=>{
-    if(!part.color) part.color = 'No Color'
-  })
+  moParts.forEach((part) => {
+    if (!part.color) part.color = "No Color";
+  });
   const allProcesses = moParts.flatMap(
     (part) => part.expand?.processes_via_partId || [],
-  )
+  );
   const totalProcesses = allProcesses.length;
-  const procFinished = allProcesses.filter((proc) => proc.status == "Done").length;
+  const procFinished = allProcesses.filter(
+    (proc) => proc.status == "Done",
+  ).length;
   mo.completionPercentage =
     totalProcesses !== 0
       ? Math.round((procFinished / totalProcesses) * 100)
@@ -101,12 +103,34 @@ const expansions = [
   "notes_via_moId.userId",
   "mo_files_via_moId.senderId",
 ];
+
+export async function getMyMOs(): Promise<
+  ReturnMessage<ListModel<DeepExpandedMO>>
+> {
+  try {
+    const userId = getUser()?.id;
+    const mosRes = await ApiService.get<ListModel<DeepExpandedMO>>(moEndPoint, {
+      expand: expansions.join(","),
+      sort: "-created",
+      filter: `(projectId.projectManagerId ~ '${userId}' || 
+      projectId.designEngineersId ~ '${userId}' || 
+      projectId.productionEngineersId ~ '${userId}')`,
+    });
+    mosRes.data?.items.forEach((mo) => computeMODerivedProperties(mo));
+    return mosRes;
+  } catch (error) {
+    console.error("Failed to fetch deep MO data:", error);
+    throw error;
+  }
+}
+
 export async function getMOs(): Promise<
   ReturnMessage<ListModel<DeepExpandedMO>>
 > {
   try {
     const mosRes = await ApiService.get<ListModel<DeepExpandedMO>>(moEndPoint, {
-      expand: expansions.join(","),sort:'-created'
+      expand: expansions.join(","),
+      sort: "-created",
     });
     mosRes.data?.items.forEach((mo) => computeMODerivedProperties(mo));
     return mosRes;
@@ -122,7 +146,7 @@ export async function getMO(
   try {
     const moRes = await ApiService.get<DeepExpandedMO>(
       `${moEndPoint}/${moId}`,
-      { expand: expansions.join(","),sort:'-created' },
+      { expand: expansions.join(","), sort: "-created" },
     );
     computeMODerivedProperties(moRes.data);
     return moRes;
@@ -164,7 +188,7 @@ export async function setEstDate(
   }
 }
 
-export async function addMO(mo: MOModel):Promise<ReturnMessage<MOModel>> {
+export async function addMO(mo: MOModel): Promise<ReturnMessage<MOModel>> {
   try {
     const moRes = await ApiService.post<MOModel>(moEndPoint, mo);
     return moRes;
@@ -174,19 +198,19 @@ export async function addMO(mo: MOModel):Promise<ReturnMessage<MOModel>> {
   }
 }
 
-
-
 export async function markMoSeen(mo: MOModel): Promise<ReturnMessage<MOModel>> {
   try {
-    const userId = getUser()?.id
-    if(userId &&  mo.seenBy && mo.seenBy.includes(userId)) {
-        return {
-            success:true,
-            data:mo,
-        }
-    } 
-    const seenBy = mo.seenBy ? [...mo.seenBy,userId] : [userId]
-    const moRes = await ApiService.patch<MOModel>(`${moEndPoint}/${mo.id}`, {seenBy:JSON.stringify(seenBy)});
+    const userId = getUser()?.id;
+    if (userId && mo.seenBy && mo.seenBy.includes(userId)) {
+      return {
+        success: true,
+        data: mo,
+      };
+    }
+    const seenBy = mo.seenBy ? [...mo.seenBy, userId] : [userId];
+    const moRes = await ApiService.patch<MOModel>(`${moEndPoint}/${mo.id}`, {
+      seenBy: JSON.stringify(seenBy),
+    });
     return moRes;
   } catch (error) {
     console.error("Failed to update MO data:", error);

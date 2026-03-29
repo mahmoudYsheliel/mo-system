@@ -17,6 +17,7 @@ const router = useRouter()
 const MOs = ref<DeepExpandedMO[]>([])
 const showDialog = ref(false)
 const isMOViewLoading = ref(true)
+
 onMounted(async () => {
     const res = await getMOs()
     if (!(res && res.success && res.data && res.data.items))
@@ -77,7 +78,7 @@ const results = computed(() => {
 }
 
 #mo-main-container {
-    padding-inline: 2rem;
+    padding-inline: 1rem;
     max-height: 100vh;
     overflow: auto;
 }

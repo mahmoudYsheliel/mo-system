@@ -38,7 +38,7 @@ export function downloadDb(db: Database) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "data.db";
+  a.download = "Mo_Database.db";
   a.click();
   a.remove();
 }

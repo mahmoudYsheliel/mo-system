@@ -98,7 +98,7 @@ defineProps(['selectedPage'])
     border-bottom-right-radius: 0.75rem;
     border-top-right-radius: 0.75rem;
     height: 100vh;
-    background-color: white;
+    background-color: #FaFaFa;
 }
 
 i {
@@ -164,12 +164,12 @@ i {
 }
 
 .side-bar-item:hover {
-    background-color: #f6f6f6;
+    background-color: #f0f0f0;
     color:black;
 }
 
 .selected_item {
-    background-color: #f6f6f6;
+    background-color: #f0f0f0;
     color:black;
 }
 

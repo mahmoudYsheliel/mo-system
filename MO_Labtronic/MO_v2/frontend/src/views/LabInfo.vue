@@ -71,7 +71,7 @@ onMounted(async () => {
 }
 
 #lab-info-main-body {
-    padding-inline: 2rem;
+    padding-inline: 1rem;
     max-height: 100%;
     overflow-y: auto;
 }

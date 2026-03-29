@@ -85,20 +85,23 @@ async function reloadProject() {
                     <MODates :startDate="projectDatesObj.start" :estDate="projectDatesObj.estimated"
                         :finDate="projectDatesObj.finish" id="project-dates" />
 
-                    <div class="checklist-files-container">
-                        <div style="flex: 2;"
-                            v-show="project.assemblyPics?.length || project.assemblyFiles?.length || project.projectFiles?.length">
-                            <FilesImages :assemblyPics="project.assemblyPics" :assemblyFiles="project.assemblyFiles"
+                         <FilesImages :assemblyPics="project.assemblyPics" :assemblyFiles="project.assemblyFiles"
                                 :projectFiles="project.projectFiles" />
+                    <div class="checklist-notes-container">
+                        <div style="flex: 2;"
+                        
+                            v-show="project.assemblyPics?.length || project.assemblyFiles?.length || project.projectFiles?.length">
+                            <Notes :notes="project.expand?.notes_via_projectId" @noteSent="reloadProject()"
+                        :projectId="project.id" />
+                           
                         </div>
-                        <div style="flex: 1;" v-show="project.expand?.project_check_list_via_projectId?.length">
-                            <CheckList :checkList="project.expand?.project_check_list_via_projectId" />
+                        <div style="flex: 1;" >
+                            <CheckList  :checkList="project.expand?.project_check_list_via_projectId" :projectId="project.id" @itemAdded="reloadProject()" />
                         </div>
 
                     </div>
 
-                    <Notes :notes="project.expand?.notes_via_projectId" @noteSent="reloadProject()"
-                        :projectId="project.id" />
+                    
 
 
                     <div id="project-notes-container" v-show="project.expand?.mos_via_projectId?.length">
@@ -131,7 +134,7 @@ async function reloadProject() {
 }
 
 #project-info-main-body {
-    padding-inline: 2rem;
+    padding-inline: 1rem;
     max-height: 100%;
     overflow-y: auto;
 
@@ -177,13 +180,13 @@ async function reloadProject() {
     border-radius: 0.25rem;
 }
 
-.checklist-files-container {
+.checklist-notes-container {
     display: flex;
     gap: 1rem;
 }
 
 @media screen and (max-width:1440px) {
-    .checklist-files-container {
+    .checklist-notes-container {
         flex-direction: column;
 
     }

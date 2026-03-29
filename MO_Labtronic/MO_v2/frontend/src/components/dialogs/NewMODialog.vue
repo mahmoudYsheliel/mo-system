@@ -13,7 +13,6 @@ import type { DBPartModel, PartModel } from '@/models/part.model';
 import { addPart } from '@/services/apis/part.service';
 import type { ProcessModel } from '@/models/process.model';
 import { batchPostProcesses } from '@/services/apis/process.service';
-import { sendNotification } from '@/_archive/notification.service';
 import { createNotification } from '@/services/apis/mo-notification.service';
 
 const visible = defineModel<boolean>('visible')

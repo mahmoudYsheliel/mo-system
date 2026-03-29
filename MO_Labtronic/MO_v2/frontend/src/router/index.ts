@@ -1,6 +1,7 @@
 import {
   createRouter,
-  createWebHistory,
+  createWebHashHistory,
+   
   type RouteRecordRaw,
 } from "vue-router";
 import { type RouterMetaData } from "@/types/user";
@@ -83,7 +84,7 @@ const routes: Array<RouteRecordRaw & { meta: RouterMetaData }> = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes,
 });
 

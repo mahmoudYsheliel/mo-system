@@ -5,11 +5,14 @@ import { computed, ref, watch } from 'vue';
 import { Toast,useToast } from 'primevue';
 import { type ProjectCheckListModel } from '@/models/project-check-list.model';
 import { batchUpdateCheckList } from '@/services/apis/project-checklist.service';
-const toast = useToast()
+import AddChecklistItemDialog from '../dialogs/AddChecklistItemDialog.vue';
 
+const toast = useToast()
+const dialogVisibility = ref(false)
 const items = ref<ProjectCheckListModel[]>([])
 const originalState = ref('')
-const props = defineProps<{ checkList?: ProjectCheckListModel[]; }>();
+const props = defineProps<{ checkList?: ProjectCheckListModel[];projectId?:string }>();
+const emits = defineEmits(['itemAdded'])
 
 watch(props, () => {
     items.value = props.checkList || []
@@ -23,9 +26,7 @@ const hasChanges = computed(() => {
 });
 
 async function updateCheckList() {
-
     const res = await batchUpdateCheckList(items.value)
-    
     if(res.success){
         toast.add( {
             severity: 'success',
@@ -42,6 +43,7 @@ async function updateCheckList() {
 
 <template>
     <Toast />
+    <AddChecklistItemDialog v-model:visible="dialogVisibility" :projectId="projectId" @itemAdded="emits('itemAdded')" />
     <div id="checklist-notes-container">
         <h2 id="checklist-notes-title">Check List</h2>
         <div id="checklist-notes-wrapper">
@@ -52,7 +54,9 @@ async function updateCheckList() {
 
         </div>
         <div class="checklist-btn-container">
-            <Button v-if="hasChanges" label="Update Check List" @click="updateCheckList" />
+            <Button label="Add Item" @click="dialogVisibility = true" />
+
+            <Button style="background-color: #2ecc71;border: none;" v-if="hasChanges" label="Save" @click="updateCheckList" />
         </div>
     </div>
 
@@ -77,7 +81,7 @@ async function updateCheckList() {
 #checklist-notes-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.25rem;
 }
 
 .checklist-item {
@@ -90,9 +94,10 @@ async function updateCheckList() {
 
 .checklist-btn-container {
     display: flex;
-    justify-content: end;
+    justify-content: space-between;
+    margin-top: 0.5rem;
 }
 button{
-    font-size: 0.75rem;
+    font-size: 0.875rem;
 }
 </style>

@@ -5,6 +5,7 @@ import Button from "primevue/button";
 import StatusMenu from "./StatusMenu.vue";
 import type { ProcessStatus } from "@/types/process";
 import type { ExpandedPart } from "@/services/apis/mo.service";
+import { getUser } from "@/services/user.service";
 
 const props = defineProps<{ parts: ExpandedPart[] }>();
 
@@ -57,6 +58,9 @@ const processes = computed(() => {
 
     return [...new Set(processes)];
 });
+
+const isUserProduction = getUser()?.roles?.includes('Production Engineer')
+
 </script>
 
 <template>
@@ -70,7 +74,7 @@ const processes = computed(() => {
         <div style="flex-grow: 1"></div>
 
         <Button class="mark-done" label="Mark as Done" @click="emits('markFilterDone')"
-            v-if="showFilterActions && showMarkDone" icon="pi pi-check-circle" />
+            v-if="showFilterActions && showMarkDone && isUserProduction" icon="pi pi-check-circle" />
 
         <StatusMenu v-if="showFilterActions && showProcessStatus" status-prop="Not Started"
             @new-status="(s: ProcessStatus) => emits('editProcess', s)" />

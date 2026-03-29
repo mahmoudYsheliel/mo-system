@@ -4,7 +4,7 @@ import { ref,onMounted,watch } from "vue";
 import { processColorsMap } from "@/constants/colors";
 import { processMenuOptions } from "@/constants/processMenuOptions";
 import type { ProcessStatus } from "@/types/process";
-
+import { getUser } from "@/services/user.service";
 
 const props = defineProps(["statusProp"]);
 const emits= defineEmits(["newStatus"]);
@@ -21,13 +21,16 @@ watch(props,()=>{
     status.value = props.statusProp
 })
 
+const isUserProduction = getUser()?.roles?.includes('Production Engineer')
 </script>
 
 <template>
   <div
+  v-if="isUserProduction"
     class="process-status-container"
     @click="toggle($event)"
     :style="{background:processColorsMap[status as ProcessStatus]}"
+    style="  cursor: pointer;"
   >
     <p class="process-status">{{ status }}</p>
     <i
@@ -48,6 +51,9 @@ watch(props,()=>{
       </template>
     </Menu>
   </div>
+  <div v-else  class="process-status-container" :style="{background:processColorsMap[status as ProcessStatus]}">
+    <p class="process-status">{{ status }}</p>
+  </div>
 </template>
 
 <style scoped>
@@ -56,7 +62,6 @@ watch(props,()=>{
   align-items: center;
   justify-content: space-between;
   width: 8rem;
-  cursor: pointer;
   padding: 0.25rem;
   border-radius: 0.5rem;
   color: white;

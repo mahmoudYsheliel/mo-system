@@ -5,7 +5,7 @@ import {
   type ReturnMessage,
 } from "@/models/return-message.model";
 
-const _urlBase = "https://mo.lab-tronic.com/database";
+const _urlBase = "https://dev.mo.lab-tronic.com/database";
 
 export function getPocketBaseURL() {
   return _urlBase;

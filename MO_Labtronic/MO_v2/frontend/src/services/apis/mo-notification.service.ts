@@ -10,7 +10,6 @@ import {
   type NotificationEvent,
 } from "@/lib/generate-notification";
 import type { BatchResponseModel } from "@/models/batch-response.model";
-import { sendPushAlertNotification } from "./pushalert.service";
 
 const moNotificationEndPoint = "/api/collections/mo_notifications/records";
 
@@ -45,7 +44,6 @@ export async function createNotification(
       `${moNotificationEndPoint}`,
       notification,
     );
-    sendPushAlertNotification(notification)
     return notificationRes;
   } catch (error) {
     console.error("Failed to add notification: ", error);

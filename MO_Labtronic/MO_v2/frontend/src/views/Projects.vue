@@ -73,7 +73,7 @@ const results = computed(() => {
 }
 
 #project-main-container {
-    padding-inline: 2rem;
+    padding-inline: 1rem;
     max-height: 100vh;
     overflow: auto;
 }

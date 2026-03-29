@@ -8,6 +8,7 @@ import { Toast, useToast } from "primevue";
 import type { ExpandedPart } from "@/services/apis/mo.service";
 import { batchUpdateProcesses } from "@/services/apis/process.service";
 import type { ProcessStatus } from "@/types/process";
+import { getUser } from "@/services/user.service";
 
 const props = defineProps<{ originalParts?: ExpandedPart[] }>();
 const parts = ref<ExpandedPart[]>([])
@@ -102,6 +103,8 @@ const confirmSave = () => {
         },
     });
 };
+const isUserProduction = getUser()?.roles?.includes('Production Engineer')
+
 </script>
 
 <template>
@@ -127,7 +130,7 @@ const confirmSave = () => {
                 @click="confirmSave()" />
 
             <Button class="btn-done" title="Mark all Done" icon="pi pi-check-circle" label="Mark all Done"
-                @click="markAllDone()" />
+                @click="markAllDone()" v-if="isUserProduction" />
         </div>
     </div>
 </template>

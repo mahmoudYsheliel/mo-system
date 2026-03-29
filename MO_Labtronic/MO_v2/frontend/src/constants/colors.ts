@@ -6,7 +6,7 @@ import type {
 } from "@/types/mo-order";
 import { type PartStatus } from "@/types/part";
 import type { UserType } from "@/types/user";
-import type { Notification } from "@/types/notifications";
+import type { NotificationType } from "@/types/notifications";
 
 export const priorityColor: Record<Priority, string> = {
   HIGH: "#E53935",
@@ -62,7 +62,7 @@ export const MOStatusColors: Record<PartStatus, string> = {
 };
 
 export const notificationColors: Record<
-  Notification,
+  NotificationType,
   { color: string; icon: string }
 > = {
   mo_created: {
@@ -88,13 +88,13 @@ export const notificationColors: Record<
 };
 
 export function getNotificationColor(
-  notificationType?: Notification,
+  notificationType?: NotificationType,
   isRead?: boolean,
 ) {
   if (isRead || !notificationType) return "#2c2c2c";
   return notificationColors[notificationType].color;
 }
-export function getNotificationIcon(notificationType?: Notification) {
+export function getNotificationIcon(notificationType?: NotificationType) {
   if (!notificationType) return undefined;
   return notificationColors[notificationType].icon;
 }
