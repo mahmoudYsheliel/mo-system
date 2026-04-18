@@ -5,7 +5,10 @@ import { downloadFile } from '@/services/download.service';
 import { Image } from 'primevue';
 import { ref, watch } from 'vue';
 import Button from 'primevue/button';
+import AddProjectFilesDialog from '@/components/dialogs/AddProjectFilesDialog.vue';
+import { getUser } from '@/services/user.service';
 
+const showAddProjectFileDialog = ref(false)
 
 
 const props = defineProps<{
@@ -46,6 +49,7 @@ function openFile(fileName: string) {
 </script>
 
 <template>
+    <AddProjectFilesDialog v-model:visible="showAddProjectFileDialog" :projectId="projectId" />
     <div id="files-notes-container">
         <h2 id="files-notes-title">Project Files</h2>
 
@@ -96,6 +100,7 @@ function openFile(fileName: string) {
                 </div>
             </div>
         </div>
+        <Button v-if="getUser()?.roles?.includes('Design Engineer')" label="Add Files" @click="showAddProjectFileDialog= true" icon="pi pi-plus" class="add-files-button" />
     </div>
 </template>
 
@@ -146,6 +151,7 @@ function openFile(fileName: string) {
 .files-container {
     width: 100%;
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
 }
 
@@ -168,5 +174,9 @@ function openFile(fileName: string) {
 
 .actions-container>button {
     font-size: 0.75rem;
+}
+
+.add-files-button{
+    margin-top: 1rem;
 }
 </style>

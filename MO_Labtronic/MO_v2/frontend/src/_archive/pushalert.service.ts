@@ -2,7 +2,7 @@
 
 import { type MONotificationModel } from "@/models/mo-notification.model";
 import type { NotificationType } from "@/types/notifications";
-import { getUsers } from "./account.service";
+import { getUsers } from "../services/apis/account.service";
 
 
 const PUSHALERT_API_URL = "http://127.0.0.1:3000/api/notify";

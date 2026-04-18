@@ -4,18 +4,19 @@ import type { ReturnMessage } from "@/models/return-message.model";
 import type { ListModel } from "@/models/list-model";
 import type { UpdatePasswordModel } from "@/models/update-password.model";
 import { getUser, setUser } from "../user.service";
+import type { SearchCriteriaModel } from "@/models/search-criteria.model";
 
 export const accountEndPoint = "/api/collections/accounts/records";
 
-export async function getUsers(): Promise<
+export async function getUsers(searchCriteria?:SearchCriteriaModel): Promise<
   ReturnMessage<ListModel<AccountModel>>
 > {
   try {
     const accRes =
-      await ApiService.get<ListModel<AccountModel>>(accountEndPoint);
+      await ApiService.get<ListModel<AccountModel>>(accountEndPoint,searchCriteria);
     return accRes;
   } catch (error) {
-    console.error("Failed to fetch accounts data:", error);
+    console.error("Failed to get accounts data:", error);
     throw error;
   }
 }
@@ -73,7 +74,7 @@ export async function checkSubscriberId(subscriberId: string): Promise<ReturnMes
     setUser(accRes.data)
     return accRes;
   } catch (error) {
-    console.error("Failed to fetch deep MO data:", error);
+    console.error("Failed to get deep MO data:", error);
     throw error;
   }
 }

@@ -24,7 +24,6 @@ const toast = useToast()
 // --- Form Data Refs ---
 const projectName = ref('')
 const projectCode = ref('')
-const projectCodeWithLabCode = ref('')
 const projectManager = ref()
 const projectDesigner = ref()
 const projectProduction = ref()

@@ -12,18 +12,21 @@ import Button from 'primevue/button';
 import NewMODialog from '@/components/dialogs/NewMODialog.vue';
 import { syncDB } from '@/services/sql.service';
 import { getMOs, type DeepExpandedMO } from '@/services/apis/mo.service';
+import Paginator, { type PageState } from 'primevue/paginator';
+import { SearchCriteriaModel } from '@/models/search-criteria.model';
 
 const router = useRouter()
 const MOs = ref<DeepExpandedMO[]>([])
 const showDialog = ref(false)
 const isMOViewLoading = ref(true)
 
-onMounted(async () => {
-    const res = await getMOs()
-    if (!(res && res.success && res.data && res.data.items))
-        return
-    MOs.value = res.data.items 
-    isMOViewLoading.value = false
+
+const page = ref(0)
+const perPage = ref(10)
+const totalRecords = ref(0)
+
+onMounted( () => {
+    getMosData()
 })
 
 
@@ -42,6 +45,27 @@ const results = computed(() => {
     return searcher.search(search.value)
 })
 
+async function getMosData(){
+    const searchCriteria = new SearchCriteriaModel({ page: page.value + 1, perPage: perPage.value })
+
+    const res = await getMOs(searchCriteria)
+    if (!(res && res.success && res.data && res.data.items))
+        return
+    MOs.value = res.data.items 
+    isMOViewLoading.value = false
+    totalRecords.value = res.data.totalItems
+
+    document.getElementById('mo-main-container')?.scroll({
+        top: 0,
+        behavior: 'smooth'
+    });
+}
+
+function updatePageParams(params: Partial<PageState>) {
+    page.value = params.page ?? 1
+    perPage.value = params.rows ?? 10
+    getMosData()
+}
 
 
 </script>
@@ -65,6 +89,8 @@ const results = computed(() => {
             <div style="position: absolute; bottom: 2rem; right:2rem">
                 <Button @click="syncDB" label="Sync DB" />
             </div>
+            <Paginator class="paginator" @page="e => updatePageParams(e)" :totalRecords="totalRecords" :rows="perPage" :rowsPerPageOptions="[2, 5, 10, 20, 30]" />
+
         </div>
     </div>
 </template>
@@ -110,6 +136,10 @@ const results = computed(() => {
     transform: translateX(30px);
 }
 
+.paginator {
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+}
 @media screen and (max-width:1100px) {
     .mo-cards-container {
         justify-content: center;

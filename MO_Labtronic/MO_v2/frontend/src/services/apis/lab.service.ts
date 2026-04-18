@@ -3,7 +3,7 @@ import { type ReturnMessage } from "@/models/return-message.model";
 import { ApiService } from "../api.service";
 import type { ListModel } from "@/models/list-model";
 import type { DeepExpandedProject } from "./project.service";
-
+import { SearchCriteriaModel } from "@/models/search-criteria.model";
 export interface DeepExpandedLab extends LabModel {
   expand?: {
     projects_via_labId: DeepExpandedProject[];
@@ -20,39 +20,35 @@ const expansions = [
   "projects_via_labId.labId",
   "projects_via_labId.universityId.projects_via_universityId",
 ];
-export async function getLabs(): Promise<
+export async function getLabs(searchParams?: SearchCriteriaModel): Promise<
   ReturnMessage<ListModel<DeepExpandedLab>>
 > {
   try {
     const labRes = await ApiService.get<ListModel<DeepExpandedLab>>(
       labEndPoint,
-      { expand: expansions.join(","),sort:'-created' },
+      new SearchCriteriaModel({ expand: expansions, ...searchParams }),
     );
     return labRes;
   } catch (error) {
-    console.error("Failed to fetch labs data:", error);
+    console.error("Failed to get labs data:", error);
     throw error;
   }
 }
 
-export async function getLab(
-  labId: string,
-): Promise<ReturnMessage<DeepExpandedLab>> {
+export async function getLab(labId: string): Promise<ReturnMessage<DeepExpandedLab>> {
   try {
     const labRes = await ApiService.get<DeepExpandedLab>(
       `${labEndPoint}/${labId}`,
-      { expand: expansions.join(","),sort:'-created' },
+      new SearchCriteriaModel({ expand: expansions }),
     );
     return labRes;
   } catch (error) {
-    console.error("Failed to fetch labs data:", error);
+    console.error("Failed to get labs data:", error);
     throw error;
   }
 }
 
-export async function createLab(
-  lab: LabModel,
-): Promise<ReturnMessage<LabModel>> {
+export async function createLab(lab: LabModel): Promise<ReturnMessage<LabModel>> {
   try {
     const labRes = await ApiService.post<LabModel>(labEndPoint, lab);
     return labRes;

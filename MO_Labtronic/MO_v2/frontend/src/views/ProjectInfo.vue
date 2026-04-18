@@ -22,10 +22,11 @@ const breadCrumbData = ref<BreadCrumb[]>([])
 
 const projectDatesObj = ref<MODate>({});
 
-onMounted(async () => {
-    const projectId = route.params.id
+const projectId = ref<string>(route.params.id as string)
 
-    const projectRes = await getExpandedProject(projectId as string)
+onMounted(async () => {
+
+    const projectRes = await getExpandedProject(projectId.value)
     const projectData = projectRes.data
 
     if (!projectData) return
@@ -68,47 +69,30 @@ async function reloadProject() {
                 <BreadCrumbNavigator :breadCrumbElements="breadCrumbData" style="margin-top: 1rem" />
                 <div class="chip-line-container">
                     <Chip v-if="project.priority" :bg="priorityColor[project.priority]" :label="project.priority" />
-                    <Chip v-if="project?.expand?.projectManagerId?.userName"
-                        :label="project?.expand?.projectManagerId?.userName"
-                        :bg="MORepresentativeColors['Project Manager']" />
+                    <Chip v-if="project?.expand?.projectManagerId?.userName" :label="project?.expand?.projectManagerId?.userName" :bg="MORepresentativeColors['Project Manager']" />
 
-                    <Chip v-if="project?.expand?.designEngineersId?.[0]"
-                        :label="project.expand.designEngineersId[0].userName"
-                        :bg="MORepresentativeColors['Design Engineer']" />
+                    <Chip v-if="project?.expand?.designEngineersId?.[0]" :label="project.expand.designEngineersId[0].userName" :bg="MORepresentativeColors['Design Engineer']" />
 
-                    <Chip v-if="project?.expand?.productionEngineersId?.[0]?.userName"
-                        :label="project?.expand?.productionEngineersId?.[0]?.userName"
-                        :bg="MORepresentativeColors['Production Engineer']" />
+                    <Chip v-if="project?.expand?.productionEngineersId?.[0]?.userName" :label="project?.expand?.productionEngineersId?.[0]?.userName" :bg="MORepresentativeColors['Production Engineer']" />
                 </div>
 
                 <div id="main-body">
-                    <MODates :startDate="projectDatesObj.start" :estDate="projectDatesObj.estimated"
-                        :finDate="projectDatesObj.finish" id="project-dates" />
+                    <MODates :startDate="projectDatesObj.start" :estDate="projectDatesObj.estimated" :finDate="projectDatesObj.finish" id="project-dates" />
 
-                         <FilesImages :assemblyPics="project.assemblyPics" :assemblyFiles="project.assemblyFiles"
-                                :projectFiles="project.projectFiles" />
+                    <FilesImages :assemblyPics="project.assemblyPics" :assemblyFiles="project.assemblyFiles" :projectFiles="project.projectFiles" />
                     <div class="checklist-notes-container">
-                        <div style="flex: 2;"
-                        
-                            v-show="project.assemblyPics?.length || project.assemblyFiles?.length || project.projectFiles?.length">
-                            <Notes :notes="project.expand?.notes_via_projectId" @noteSent="reloadProject()"
-                        :projectId="project.id" />
-                           
-                        </div>
-                        <div style="flex: 1;" >
-                            <CheckList  :checkList="project.expand?.project_check_list_via_projectId" :projectId="project.id" @itemAdded="reloadProject()" />
-                        </div>
+                        <div style="flex: 2;" v-show="project.assemblyPics?.length || project.assemblyFiles?.length || project.projectFiles?.length">
+                            <Notes :notes="project.expand?.notes_via_projectId" @noteSent="reloadProject()" :projectId="project.id" />
 
+                        </div>
+                        <div style="flex: 1;">
+                            <CheckList :checkList="project.expand?.project_check_list_via_projectId" :projectId="project.id" @itemAdded="reloadProject()" />
+                        </div>
                     </div>
-
-                    
-
-
                     <div id="project-notes-container" v-show="project.expand?.mos_via_projectId?.length">
                         <h2 id="project-title">Manufacturing Orders</h2>
                         <TransitionGroup class="project-cards-container" tag="MOCard" name="list">
-                            <MOCard v-for="mo, i in project.expand?.mos_via_projectId" :key="i" :MOData="mo"
-                                @click="router.push(`/manufacturing-order-info/${mo.id}`)" />
+                            <MOCard v-for="mo, i in project.expand?.mos_via_projectId" :key="i" :MOData="mo" @click="router.push(`/manufacturing-order-info/${mo.id}`)" />
                         </TransitionGroup>
                     </div>
                 </div>

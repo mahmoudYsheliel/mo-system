@@ -11,6 +11,8 @@ import { getMOs, getMyMOs } from '@/services/apis/mo.service';
 import { Skeleton } from 'primevue';
 import type { DeepExpandedMO } from '@/services/apis/mo.service';
 import SelectButton from 'primevue/selectbutton';
+import Paginator, { type PageState } from 'primevue/paginator';
+import { SearchCriteriaModel } from '@/models/search-criteria.model';
 
 const moFilterType = ref(['All MOs', 'My MOs'])
 const selectedMoFilterType = ref<string | undefined>(undefined)
@@ -21,19 +23,38 @@ const summaryData = shallowRef(summaryCardsConf)
 const mos = ref<Record<MOSummaryStatus, DeepExpandedMO[]>>({ 'Not Started': [], 'Active': [], 'Completed': [], 'Total': [] })
 const selectedMOStatus = ref<MOSummaryStatus>('Total')
 const isMOViewLoading = ref(true)
+
+const page = ref(0)
+const perPage = ref(10)
+const totalRecords = ref(0)
+
+
 onMounted(async () => {
     selectedMoFilterType.value = 'All MOs'
 })
 
 watch(selectedMoFilterType, async () => {
+    getMosData()
+})
+
+function updatePageParams(params: Partial<PageState>) {
+    page.value = params.page ?? 1
+    perPage.value = params.rows ?? 10
+    getMosData()
+}
+
+
+async function getMosData() {
     isMOViewLoading.value = true
     mos.value = { 'Not Started': [], 'Active': [], 'Completed': [], 'Total': [] }
-    const moRes = await (selectedMoFilterType.value === 'All MOs' ? getMOs() : getMyMOs())
+    const searchCriteria = new SearchCriteriaModel({ page: page.value + 1, perPage: perPage.value })
+    const moRes = await (selectedMoFilterType.value === 'All MOs' ? getMOs(searchCriteria) : getMyMOs(searchCriteria))
     if (!moRes.data)
         return
 
 
     const expandedMos = moRes.data.items
+    totalRecords.value = moRes.data.totalItems
     expandedMos.forEach(mo => {
         mos.value['Total'].push(mo)
         switch (mo.status) {
@@ -48,8 +69,12 @@ watch(selectedMoFilterType, async () => {
     summaryData.value['Not Started'].count = mos.value['Not Started'].length
     summaryData.value.Total.count = mos.value.Total.length
     isMOViewLoading.value = false
+    document.getElementById('dashboard-main-container')?.scroll({
+        top: 0,
+        behavior: 'smooth'
+    });
+}
 
-})
 
 
 </script>
@@ -65,9 +90,7 @@ watch(selectedMoFilterType, async () => {
             </div>
 
             <div id="summary-cards-container">
-                <SummaryCard v-for="(summaryCard, title) in summaryData" :key="title" :summaryData="summaryCard"
-                    :isLoading="isMOViewLoading" :isSelected="selectedMOStatus == title" :title="title"
-                    @selectedSummaryType="s => selectedMOStatus = s" />
+                <SummaryCard v-for="(summaryCard, title) in summaryData" :key="title" :summaryData="summaryCard" :isLoading="isMOViewLoading" :isSelected="selectedMOStatus == title" :title="title" @selectedSummaryType="s => selectedMOStatus = s" />
             </div>
             <div class="mo-cards-container">
                 <Skeleton style="width: 24rem;height: 10rem;" v-if="isMOViewLoading" />
@@ -75,9 +98,10 @@ watch(selectedMoFilterType, async () => {
                 <Skeleton style="width: 24rem;height: 10rem;" v-if="isMOViewLoading" />
             </div>
             <TransitionGroup class="mo-cards-container" tag="MOCard" name="list">
-                <MOCard v-if="!isMOViewLoading" v-for="mo, i in mos[selectedMOStatus]" :key="i" :MOData="mo"
-                    @click="router.push(`/manufacturing-order-info/${mo.id}`)" />
+                <MOCard v-if="!isMOViewLoading" v-for="mo, i in mos[selectedMOStatus]" :key="i" :MOData="mo" @click="router.push(`/manufacturing-order-info/${mo.id}`)" />
             </TransitionGroup>
+
+            <Paginator class="paginator" @page="e => updatePageParams(e)" :totalRecords="totalRecords" :rows="perPage" :rowsPerPageOptions="[2, 5, 10, 20, 30]" />
         </div>
     </div>
 </template>
@@ -127,5 +151,10 @@ watch(selectedMoFilterType, async () => {
 .list-leave-to {
     opacity: 0;
     transform: translateX(30px);
+}
+
+.paginator {
+    margin-top: 1rem;
+    margin-bottom: 2rem;
 }
 </style>

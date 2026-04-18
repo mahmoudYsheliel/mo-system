@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router';
 import { batchMarkNotificationsRead } from '@/services/apis/mo-notification.service';
 import { getUser } from '@/services/user.service';
 import { subscribeToPushAlert } from '@/services/pushalert.service';
+import { SearchCriteriaModel } from '@/models/search-criteria.model';
 
 const allowNotificationComputed = ref<Boolean>(Notification.permission === "granted" && !!getUser()?.pushAlertSubscriberId);
 const notificationPopover = ref();
@@ -27,7 +28,7 @@ async function requestAllowNotification() {
 const items = ref<ExpandedMONotification[]>([])
 
 onMounted(async () => {
-    const notificationRes = await getUserNotification()
+    const notificationRes = await getUserNotification(new SearchCriteriaModel({perPage:5}))
     if (notificationRes.data?.items) {
         items.value = notificationRes.data.items
         notReadNotificationsCount.value = notificationRes.data?.items.filter(notification => !notification.isRead).length

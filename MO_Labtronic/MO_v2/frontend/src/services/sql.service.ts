@@ -32,7 +32,7 @@ export function createTableQuery(
 
 export function downloadDb(db: Database) {
   const binary = db.export();
-  const blob = new Blob([binary as Uint8Array<ArrayBuffer>], {
+  const blob = new Blob([binary], {
     type: "application/octet-stream",
   });
   const url = URL.createObjectURL(blob);

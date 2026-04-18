@@ -52,7 +52,7 @@ export function timeSince(eventTime: string) {
   if (diffMinutes < 60)
     return `${diffMinutes} minute${diffMinutes > 1 ? "s" : ""}`;
   if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""}`;
-  if(diffDays<5) return `${diffDays} day${diffDays > 1 ? "s" : ""}`;
+  if (diffDays < 5) return `${diffDays} day${diffDays > 1 ? "s" : ""}`;
   return event.toDateString()
 }
 

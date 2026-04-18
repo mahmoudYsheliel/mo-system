@@ -30,7 +30,7 @@ async function checkSubscriberId(subscriberId: string): Promise<ReturnMessage<Ac
         });
         return accRes;
     } catch (error) {
-        console.error("Failed to fetch deep MO data:", error);
+        console.error("Failed to get deep MO data:", error);
         throw error;
     }
 

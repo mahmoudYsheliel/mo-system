@@ -8,6 +8,7 @@ import type { DeepExpandedMO, ExpandedNote } from "./mo.service";
 import { computeMODerivedProperties } from "./mo.service";
 import type { DeepExpandedLab } from "./lab.service";
 import type { DeepExpandedUniversity } from "./university.service";
+import { SearchCriteriaModel } from "@/models/search-criteria.model";
 
 export interface DeepExpandedProject extends ProjectModel {
   expand?: {
@@ -50,13 +51,13 @@ const expansions = [
   "project_check_list_via_projectId",
 ];
 
-export async function getExpandedProjects(): Promise<
+export async function getExpandedProjects(searchCriteria?:SearchCriteriaModel): Promise<
   ReturnMessage<ListModel<DeepExpandedProject>>
 > {
   try {
     const projectRes = await ApiService.get<ListModel<DeepExpandedProject>>(
       projectEndPoint,
-      { expand: expansions.join(","), sort: "-created" },
+      new SearchCriteriaModel({ ...searchCriteria,expand: expansions}),
     );
     projectRes.data?.items.forEach((project) =>
       computeProjectDerivedProperties(
@@ -66,18 +67,19 @@ export async function getExpandedProjects(): Promise<
     );
     return projectRes;
   } catch (error) {
-    console.error("Failed to fetch projects data:", error);
+    console.error("Failed to get projects data:", error);
     throw error;
   }
 }
 
 export async function getExpandedProject(
   projectId: string,
+  searchCriteria?:SearchCriteriaModel
 ): Promise<ReturnMessage<DeepExpandedProject>> {
   try {
     const projectRes = await ApiService.get<DeepExpandedProject>(
       `${projectEndPoint}/${projectId}`,
-      { expand: expansions.join(","), sort: "-created" },
+     new SearchCriteriaModel({...searchCriteria, expand: expansions}),
     );
     const project = projectRes.data;
     computeProjectDerivedProperties(
@@ -86,7 +88,7 @@ export async function getExpandedProject(
     );
     return projectRes;
   } catch (error) {
-    console.error("Failed to fetch projects data:", error);
+    console.error("Failed to get projects data:", error);
     throw error;
   }
 }
@@ -97,11 +99,10 @@ export async function getProjects(): Promise<
   try {
     const projectRes = await ApiService.get<ListModel<ProjectModel>>(
       projectEndPoint,
-      { sort: "-created" },
     );
     return projectRes;
   } catch (error) {
-    console.error("Failed to fetch projects data:", error);
+    console.error("Failed to get projects data:", error);
     throw error;
   }
 }
@@ -112,11 +113,10 @@ export async function getProject(
   try {
     const projectRes = await ApiService.get<ProjectModel>(
       `${projectEndPoint}/${projectId}`,
-      { sort: "-created" },
     );
     return projectRes;
   } catch (error) {
-    console.error("Failed to fetch projects data:", error);
+    console.error("Failed to get projects data:", error);
     throw error;
   }
 }
@@ -132,6 +132,23 @@ export async function createProject(
     return projectRes;
   } catch (error) {
     console.error("Failed to create project", error);
+    throw error;
+  }
+}
+
+
+export async function addProjectFiles(
+  projectId:string,
+  projectFiles: FormData,
+): Promise<ReturnMessage<ProjectModel>> {
+  try {
+    const projectRes = await ApiService.patch<ProjectModel>(
+      `${projectEndPoint}/${projectId}`,
+      projectFiles,
+    );
+    return projectRes;
+  } catch (error) {
+    console.error("Failed to update project", error);
     throw error;
   }
 }

@@ -12,6 +12,7 @@ import { type UniversityModel } from "@/models/university.model";
 import { type LabModel } from "@/models/lab.model";
 import { ApiService } from "../api.service";
 import { getUser } from "../user.service";
+import { SearchCriteriaModel } from "@/models/search-criteria.model";
 
 export interface ExpandedPart extends PartModel {
   expand?: {
@@ -104,38 +105,44 @@ const expansions = [
   "mo_files_via_moId.senderId",
 ];
 
-export async function getMyMOs(): Promise<
+export async function getMyMOs(searchCriteria?:SearchCriteriaModel): Promise<
   ReturnMessage<ListModel<DeepExpandedMO>>
 > {
+
   try {
     const userId = getUser()?.id;
-    const mosRes = await ApiService.get<ListModel<DeepExpandedMO>>(moEndPoint, {
-      expand: expansions.join(","),
-      sort: "-created",
-      filter: `(projectId.projectManagerId ~ '${userId}' || 
-      projectId.designEngineersId ~ '${userId}' || 
-      projectId.productionEngineersId ~ '${userId}')`,
-    });
+    if(!userId) throw Error('User Id undefined')
+    const mosRes = await ApiService.get<ListModel<DeepExpandedMO>>(moEndPoint, new SearchCriteriaModel({
+      ...searchCriteria,
+      expand: expansions,
+      filter:[
+        {field:'projectId.projectManagerId',criteria:'contains',value:userId},
+        {field:'projectId.designEngineersId',criteria:'contains',value:userId},
+        {field:'projectId.productionEngineersId',criteria:'contains',value:userId}
+      ],
+      filterJoinMethod:'||',
+      
+
+    }),'moRequest');
     mosRes.data?.items.forEach((mo) => computeMODerivedProperties(mo));
     return mosRes;
   } catch (error) {
-    console.error("Failed to fetch deep MO data:", error);
+    console.error("Failed to get deep MO data:", error);
     throw error;
   }
 }
 
-export async function getMOs(): Promise<
+export async function getMOs(searchCriteria?:SearchCriteriaModel): Promise<
   ReturnMessage<ListModel<DeepExpandedMO>>
 > {
   try {
-    const mosRes = await ApiService.get<ListModel<DeepExpandedMO>>(moEndPoint, {
-      expand: expansions.join(","),
-      sort: "-created",
-    });
+    const mosRes = await ApiService.get<ListModel<DeepExpandedMO>>(moEndPoint, new SearchCriteriaModel({
+      ...searchCriteria,expand: expansions,
+    }),'moRequest');
     mosRes.data?.items.forEach((mo) => computeMODerivedProperties(mo));
     return mosRes;
   } catch (error) {
-    console.error("Failed to fetch deep MO data:", error);
+    console.error("Failed to get deep MO data:", error);
     throw error;
   }
 }
@@ -146,12 +153,12 @@ export async function getMO(
   try {
     const moRes = await ApiService.get<DeepExpandedMO>(
       `${moEndPoint}/${moId}`,
-      { expand: expansions.join(","), sort: "-created" },
+      new SearchCriteriaModel({ expand: expansions})
     );
     computeMODerivedProperties(moRes.data);
     return moRes;
   } catch (error) {
-    console.error("Failed to fetch deep MO data:", error);
+    console.error("Failed to get deep MO data:", error);
     throw error;
   }
 }
@@ -167,7 +174,7 @@ export async function setMoProdEng(
     computeMODerivedProperties(moRes.data);
     return moRes;
   } catch (error) {
-    console.error("Failed to fetch deep MO data:", error);
+    console.error("Failed to get deep MO data:", error);
     throw error;
   }
 }
@@ -183,7 +190,7 @@ export async function setEstDate(
     computeMODerivedProperties(moRes.data);
     return moRes;
   } catch (error) {
-    console.error("Failed to fetch deep MO data:", error);
+    console.error("Failed to get deep MO data:", error);
     throw error;
   }
 }

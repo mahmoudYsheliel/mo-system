@@ -1,9 +1,9 @@
 import { getToken, isTokenValid, logout } from "./user.service";
 import { type ApiOptions } from "@/types/api-options";
 import {
-  type PbErrorResponse,
   type ReturnMessage,
 } from "@/models/return-message.model";
+import { SearchCriteriaModel } from "@/models/search-criteria.model";
 
 const _urlBase = "https://dev.mo.lab-tronic.com/database";
 
@@ -13,6 +13,7 @@ export function getPocketBaseURL() {
 
 export class ApiService {
   private static baseUrl = _urlBase;
+  private static abortControllers = new Map<string, AbortController>
 
   private static async request<T>(
     options: ApiOptions,
@@ -23,17 +24,27 @@ export class ApiService {
       data,
       params,
       auth = true,
-      responseType = "json",
-      headers: customHeaders,
+      abortKey
     } = options;
     try {
+
+      let signal: AbortSignal | undefined = undefined;
+
+      if (abortKey) {
+        if (this.abortControllers.has(abortKey)) this.abortControllers.get(abortKey)?.abort()
+        const controller = new AbortController()
+        this.abortControllers.set(abortKey, controller)
+        signal = controller.signal
+      }
+
       const fullUrl = new URL(`${this.baseUrl}${url}`);
       if (params) {
-        Object.keys(params).forEach((key) =>
-          fullUrl.searchParams.append(key, String(params[key])),
+        const paramsObject = params.getJsonString()
+        Object.entries(paramsObject).forEach(([key, value]) =>
+          fullUrl.searchParams.append(key, String(value)),
         );
       }
-      const headers = new Headers(customHeaders);
+      const headers = new Headers();
       if (auth) {
         const token = getToken();
         if (token && !isTokenValid(token)) { // if auth required and there is an invalid token, we need to log in 
@@ -54,7 +65,10 @@ export class ApiService {
         method,
         headers,
         body,
+        signal
       });
+
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         return {
@@ -69,19 +83,20 @@ export class ApiService {
       if (response.status === 204)
         return { success: true, msg: "", data: {} as T };
 
-      const result =
-        responseType === "blob" ? await response.blob() : await response.json();
+      const result =  await response.json();
 
       return { success: true, msg: "", data: result };
     } catch (error) {
+      if (abortKey) this.abortControllers.delete(abortKey);
+
       return {
         success: false,
         msg: error instanceof Error ? error.message : "Network Request Failed",
       };
     }
   }
-  static get<T>(url: string, params?: any) {
-    return this.request<T>({ url, method: "GET", params });
+  static get<T>(url: string, params: SearchCriteriaModel = new SearchCriteriaModel(),abortKey?:string) {
+    return this.request<T>({ url, method: "GET", params,abortKey });
   }
   static post<T>(url: string, data: any) {
     return this.request<T>({ url, method: "POST", data });

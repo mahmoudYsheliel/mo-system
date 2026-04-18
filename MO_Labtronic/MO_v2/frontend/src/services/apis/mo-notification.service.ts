@@ -10,6 +10,7 @@ import {
   type NotificationEvent,
 } from "@/lib/generate-notification";
 import type { BatchResponseModel } from "@/models/batch-response.model";
+import { SearchCriteriaModel } from "@/models/search-criteria.model";
 
 const moNotificationEndPoint = "/api/collections/mo_notifications/records";
 
@@ -51,25 +52,30 @@ export async function createNotification(
   }
 }
 
-export async function getUserNotification(): Promise<
+export async function getUserNotification(searchCriteria?:SearchCriteriaModel): Promise<
   ReturnMessage<ListModel<ExpandedMONotification>>
 > {
   try {
     const userId = getUser()?.id;
-    const filter = `(receiversId ~ '${userId}')`;
+    if (!userId) throw Error('User Id undefiened')
 
     const notificationRes = await ApiService.get<
       ListModel<ExpandedMONotification>
-    >(`${moNotificationEndPoint}`, {
-      filter: filter,
-      expand: expansions.join(","),
-      sort: '-created'
-    });
+    >(`${moNotificationEndPoint}`, new SearchCriteriaModel({
+      ...searchCriteria,
+      filter: [{
+        field: 'receiversId',
+        criteria: 'contains',
+        value: userId
+      }],
+      expand: expansions,
+      
+    }));
 
     computeNotificationDerivedProperties(notificationRes.data?.items);
     return notificationRes;
   } catch (error) {
-    console.error("Failed to fetch notification: ", error);
+    console.error("Failed to get notification: ", error);
     throw error;
   }
 }
@@ -106,18 +112,18 @@ export async function batchMarkNotificationsRead(
 ): Promise<ReturnMessage<BatchResponseModel[]>> {
   try {
     const userId = getUser()?.id
-    const notifications =  (await getUserNotification()).data?.items
+    const notifications = (await getUserNotification()).data?.items
     if (!notifications || !userId) return {
       success: false,
-      msg: 'Failed to fetch user notifications'
+      msg: 'Failed to get user notifications'
     }
     const batchEndPoint = "/api/batch";
     const requests = notifications.map((notification) => {
-      const seenBy = notification.seenBy ? [...notification.seenBy,userId] : [userId]
+      const seenBy = notification.seenBy ? [...notification.seenBy, userId] : [userId]
       return {
         method: "PATCH",
         url: `${moNotificationEndPoint}/${notification.id}`,
-        body: {seenBy},
+        body: { seenBy },
       };
     });
     const batchRes = ApiService.post<BatchResponseModel[]>(batchEndPoint, {
